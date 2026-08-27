@@ -1,29 +1,24 @@
 """
-Arogya Link — RedFlagEngine (stub)
-====================================
+Arogya Link — RedFlagEngine
+============================
 Phase: 5 — Deterministic Red-Flag Engine
 
-Responsibility
---------------
-Evaluates a set of patient answers against the rule set defined in
-``red_flags.json`` and produces a list of triggered red flags with severity
-levels.  This engine is the **authoritative safety gate** for the system.
-
-Safety constraints (non-negotiable, from Rules.md)
----------------------------------------------------
-* Red-flag severity is DETERMINISTIC and AUTHORITATIVE.
-* Gemini (LLM) must NEVER set or override emergency priority.
-* The same input must always produce the same output — no randomness.
-* All rules must be backed by evidence (the specific answer that triggered them).
-
-Implementation target: Phase 5
+Evaluates patient intake answers against red_flags.json.
+Determines encounter triage level (CRITICAL, URGENT, ROUTINE) with zero AI hallucination risk.
 """
 
 from __future__ import annotations
 
 import json
 import pathlib
+import uuid
+from datetime import datetime, timezone
 from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.patient import Encounter
 
 __all__ = ["RedFlagEngine"]
 
@@ -31,37 +26,78 @@ _RED_FLAGS_PATH = pathlib.Path(__file__).parents[2] / "red_flags.json"
 
 
 class RedFlagEngine:
-    """Evaluates patient answers against deterministic red-flag rules.
-
-    All public methods raise :class:`NotImplementedError` until Phase 5.
-    """
+    """Evaluates intake answers deterministically against red_flags.json."""
 
     def __init__(self) -> None:
         with _RED_FLAGS_PATH.open(encoding="utf-8") as fh:
-            self._rules: list[dict[str, Any]] = json.load(fh).get("rules", [])
+            data = json.load(fh)
+        self._rules: list[dict[str, Any]] = data.get("rules", [])
 
-    # ------------------------------------------------------------------
-    # Public API — stubbed for Phase 5
-    # ------------------------------------------------------------------
+    def evaluate_answers(self, answers: dict[str, Any]) -> dict[str, Any]:
+        """Scan submitted answers and evaluate triggered red flags & triage level.
 
-    def evaluate(self, answers: dict[str, Any]) -> list[dict[str, Any]]:
-        """Evaluate *answers* against all red-flag rules.
-
-        Returns a list of triggered red-flag objects, each containing at
-        minimum: ``rule_id``, ``severity`` (critical | high | moderate),
-        ``label``, and ``evidence`` (the answer key/value that triggered it).
-
-        Returns an empty list when no rules are triggered.
-
-        :raises NotImplementedError: until Phase 5 is implemented.
+        Returns:
+            {
+                "triage_level": "CRITICAL" | "URGENT" | "ROUTINE",
+                "has_red_flags": bool,
+                "triggered_flags": list[dict],
+                "requires_immediate_escalation": bool
+            }
         """
-        raise NotImplementedError("RedFlagEngine.evaluate — implement in Phase 5")
+        chief_complaints = answers.get("q_chief_complaint", [])
+        if isinstance(chief_complaints, str):
+            chief_complaints = [chief_complaints]
 
-    def highest_severity(self, flags: list[dict[str, Any]]) -> str | None:
-        """Return the highest severity string from *flags*, or ``None``.
+        associated = answers.get("q_associated_symptoms", [])
+        if isinstance(associated, str):
+            associated = [associated]
 
-        Priority order: critical > high > moderate.
+        triggered: list[dict[str, Any]] = []
+        max_severity = "ROUTINE"
 
-        :raises NotImplementedError: until Phase 5 is implemented.
-        """
-        raise NotImplementedError("RedFlagEngine.highest_severity — implement in Phase 5")
+        for rule in self._rules:
+            triggers = rule.get("symptom_triggers", [])
+            assoc_triggers = rule.get("associated_triggers", [])
+
+            # Check if all chief complaint triggers match
+            matched_trigger = all(t in chief_complaints for t in triggers) if triggers else False
+
+            if matched_trigger:
+                if assoc_triggers:
+                    # Must match associated triggers if defined
+                    if any(a in associated for a in assoc_triggers):
+                        triggered.append(rule)
+                else:
+                    triggered.append(rule)
+
+        if triggered:
+            severities = [r.get("severity", "ROUTINE") for r in triggered]
+            if "CRITICAL" in severities:
+                max_severity = "CRITICAL"
+            elif "URGENT" in severities:
+                max_severity = "URGENT"
+
+        return {
+            "triage_level": max_severity,
+            "has_red_flags": len(triggered) > 0,
+            "triggered_flags": triggered,
+            "requires_immediate_escalation": max_severity == "CRITICAL",
+        }
+
+    async def save_evaluation(
+        self, encounter_id: str, evaluation: dict[str, Any], db: AsyncSession
+    ) -> Encounter | None:
+        """Update encounter record in database with triage level and red flags."""
+        enc_uuid = uuid.UUID(encounter_id)
+        stmt = select(Encounter).where(Encounter.id == enc_uuid)
+        res = await db.execute(stmt)
+        enc = res.scalar_one_or_none()
+
+        if enc:
+            enc.triage_level = evaluation["triage_level"]
+            enc.red_flags = evaluation["triggered_flags"]
+            enc.triaged_at = datetime.now(timezone.utc)
+            await db.commit()
+            await db.refresh(enc)
+
+        return enc

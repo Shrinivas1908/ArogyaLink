@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -43,6 +43,11 @@ class Encounter(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Triage and Red-Flag Fields (Phase 5)
+    triage_level: Mapped[str] = mapped_column(String(50), default="ROUTINE", nullable=False, index=True)
+    red_flags: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
+    triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     patient: Mapped[Patient] = relationship("Patient", back_populates="encounters")
     consent: Mapped[Consent | None] = relationship("Consent", back_populates="encounter", uselist=False)

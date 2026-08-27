@@ -79,13 +79,12 @@ def test_question_engine_raises():
 
 
 def test_red_flag_engine_raises():
+    """Phase 5: RedFlagEngine is implemented and evaluates answers."""
     from app.engines.red_flag_engine import RedFlagEngine
 
     engine = RedFlagEngine()
-    with pytest.raises(NotImplementedError):
-        engine.evaluate({})
-    with pytest.raises(NotImplementedError):
-        engine.highest_severity([])
+    res = engine.evaluate_answers({})
+    assert "triage_level" in res
 
 
 def test_contradiction_engine_raises():

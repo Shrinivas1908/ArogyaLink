@@ -1,51 +1,47 @@
 {
-  "_comment": "Arogya Link — red_flags.json | Deterministic Red-Flag Rules Skeleton",
+  "_comment": "Arogya Link — red_flags.json | Deterministic Emergency Red-Flag Rule Bank",
   "_phase": "Phase 5 — Deterministic Red-Flag Engine",
-  "_instructions": [
-    "Replace this skeleton with the complete clinical red-flag rule set before Phase 5.",
-    "Each rule is DETERMINISTIC — same input always produces the same output.",
-    "Gemini (LLM) must NEVER read or modify severity levels from this file.",
-    "Rule severity: 'critical' | 'high' | 'moderate'.",
-    "RedFlagEngine reads this file at startup.",
-    "Do NOT store patient PII in this file.",
-    "All rules must be evidence-backed: specify the exact answer field/value that triggers them."
-  ],
-  "version": "0.0.1-skeleton",
+  "version": "1.0.0",
   "rules": [
     {
-      "rule_id": "rf_chest_pain_critical",
-      "label": "Chest pain — possible cardiac emergency",
-      "severity": "critical",
-      "trigger": {
-        "field": "q_chief_complaint",
-        "operator": "contains",
-        "value": "chest_pain"
-      },
-      "evidence_template": "Patient reported chest pain or tightness as chief complaint."
+      "id": "rf_chest_pain_sweating",
+      "name": "Chest Pain with Sweating or Radiation",
+      "severity": "CRITICAL",
+      "question_id": "q_chief_complaint",
+      "symptom_triggers": ["chest_pain"],
+      "associated_triggers": ["sweating", "radiation_arm"],
+      "protocol": "Dispatch Immediate Emergency Cardiac Protocol. Notify On-Duty Physician instantly.",
+      "action_required": "EMERGENCY_ESCALATION"
     },
     {
-      "rule_id": "rf_breathlessness_high",
-      "label": "Difficulty breathing — urgent review required",
-      "severity": "high",
-      "trigger": {
-        "field": "q_chief_complaint",
-        "operator": "contains",
-        "value": "breathlessness"
-      },
-      "evidence_template": "Patient reported difficulty breathing as chief complaint."
+      "id": "rf_severe_breathlessness",
+      "name": "Severe Respiratory Distress",
+      "severity": "CRITICAL",
+      "question_id": "q_chief_complaint",
+      "symptom_triggers": ["breathlessness"],
+      "associated_triggers": [],
+      "protocol": "Immediate Oxygen Assessment & Airway Triage Required.",
+      "action_required": "EMERGENCY_ESCALATION"
     },
     {
-      "rule_id": "rf_prolonged_fever_moderate",
-      "label": "Fever persisting more than one week",
-      "severity": "moderate",
-      "trigger": {
-        "operator": "and",
-        "conditions": [
-          { "field": "q_chief_complaint", "operator": "contains", "value": "fever" },
-          { "field": "q_duration",        "operator": "equals",   "value": "more_1_week" }
-        ]
-      },
-      "evidence_template": "Patient reported fever lasting more than one week."
+      "id": "rf_dizziness_fainting",
+      "name": "Acute Syncope / Severe Dizziness",
+      "severity": "CRITICAL",
+      "question_id": "q_chief_complaint",
+      "symptom_triggers": ["dizziness"],
+      "associated_triggers": [],
+      "protocol": "Check Blood Pressure & Neurological Vitals.",
+      "action_required": "PRIORITY_TRIAGE"
+    },
+    {
+      "id": "rf_severe_fever_headache",
+      "name": "High Fever with Severe Headache",
+      "severity": "URGENT",
+      "question_id": "q_chief_complaint",
+      "symptom_triggers": ["fever", "headache"],
+      "associated_triggers": [],
+      "protocol": "Evaluate for Meningeal signs & Infectious Screen.",
+      "action_required": "URGENT_REVIEW"
     }
   ]
 }
