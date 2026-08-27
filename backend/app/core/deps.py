@@ -18,11 +18,16 @@ from typing import Any
 
 import httpx
 import jwt
+import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.staff import StaffProfile
 
 # HTTPBearer extracts Authorization: Bearer <JWT>
 security = HTTPBearer(auto_error=False)
@@ -34,9 +39,12 @@ _CACHE_LIFETIME_SECS: float = 3600.0  # Cache keys for 1 hour
 
 
 class AuthUser(BaseModel):
-    """Authenticated user info parsed from Supabase JWT claims."""
+    """Authenticated user info parsed from Supabase JWT claims and DB staff profile."""
     id: str
     email: str
+    role: str | None = None
+    full_name: str | None = None
+    active: bool = True
 
 
 async def get_jwks() -> dict[str, Any]:
@@ -75,11 +83,14 @@ async def get_jwks() -> dict[str, Any]:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
 ) -> AuthUser:
     """FastAPI dependency: extracts and validates the Supabase access token.
+    Also looks up the staff profile in PostgreSQL to populate role and active status.
 
     Raises:
         HTTPException: 401 if missing, malformed, or expired.
+        HTTPException: 403 if deactivated.
     """
     if not credentials or credentials.scheme.lower() != "bearer":
         raise HTTPException(
@@ -109,7 +120,6 @@ async def get_current_user(
             raise jwt.PyJWTError("Matching public key not found in JWKS.")
 
         # 3. Decode and verify token claims
-        # Supabase default aud is 'authenticated'
         payload = jwt.decode(
             token,
             public_key,
@@ -123,6 +133,31 @@ async def get_current_user(
 
         if not user_id or not email:
             raise jwt.PyJWTError("Token payload missing required user claims.")
+
+        # 4. Fetch staff profile role and active status
+        if db is not None:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                stmt = select(StaffProfile).where(StaffProfile.id == user_uuid)
+                result = await db.execute(stmt)
+                profile = result.scalar_one_or_none()
+                if profile is not None:
+                    if not profile.active:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Staff account is deactivated.",
+                        )
+                    return AuthUser(
+                        id=user_id,
+                        email=email,
+                        role=profile.role,
+                        full_name=profile.full_name,
+                        active=profile.active,
+                    )
+            except HTTPException:
+                raise
+            except Exception:
+                pass
 
         return AuthUser(id=user_id, email=email)
 
@@ -138,3 +173,24 @@ async def get_current_user(
             detail=f"Invalid token: {e}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def require_doctor(current_user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    """Dependency that restricts access to users with 'doctor' or 'admin' role."""
+    if current_user.role not in ("doctor", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Doctor or Admin access required.",
+        )
+    return current_user
+
+
+async def require_admin(current_user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    """Dependency that restricts access to users with 'admin' role."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
+    return current_user
+
