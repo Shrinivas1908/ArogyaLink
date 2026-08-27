@@ -5,8 +5,9 @@
   "rules": [
     {
       "id": "rf_chest_pain_sweating",
+      "rule_id": "rf_chest_pain_sweating",
       "name": "Chest Pain with Sweating or Radiation",
-      "severity": "CRITICAL",
+      "severity": "critical",
       "question_id": "q_chief_complaint",
       "symptom_triggers": ["chest_pain"],
       "associated_triggers": ["sweating", "radiation_arm"],
@@ -15,8 +16,9 @@
     },
     {
       "id": "rf_severe_breathlessness",
+      "rule_id": "rf_severe_breathlessness",
       "name": "Severe Respiratory Distress",
-      "severity": "CRITICAL",
+      "severity": "critical",
       "question_id": "q_chief_complaint",
       "symptom_triggers": ["breathlessness"],
       "associated_triggers": [],
@@ -25,8 +27,9 @@
     },
     {
       "id": "rf_dizziness_fainting",
+      "rule_id": "rf_dizziness_fainting",
       "name": "Acute Syncope / Severe Dizziness",
-      "severity": "CRITICAL",
+      "severity": "critical",
       "question_id": "q_chief_complaint",
       "symptom_triggers": ["dizziness"],
       "associated_triggers": [],
@@ -35,8 +38,9 @@
     },
     {
       "id": "rf_severe_fever_headache",
+      "rule_id": "rf_severe_fever_headache",
       "name": "High Fever with Severe Headache",
-      "severity": "URGENT",
+      "severity": "high",
       "question_id": "q_chief_complaint",
       "symptom_triggers": ["fever", "headache"],
       "associated_triggers": [],

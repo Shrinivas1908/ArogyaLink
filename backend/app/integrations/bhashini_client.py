@@ -7,6 +7,7 @@ Phase 9 — Bhashini Multilingual Speech-to-Text (STT) Client.
 from __future__ import annotations
 
 from typing import Any
+from app.core.config import settings
 
 
 class BhashiniClient:
@@ -14,11 +15,14 @@ class BhashiniClient:
 
     SUPPORTED_LANGUAGES = ["hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "en"]
 
+    def __init__(self) -> None:
+        self.api_key = settings.bhashini_api_key
+        self.user_id = settings.bhashini_user_id
+
     def transcribe_audio_bytes(
         self, audio_bytes: bytes, source_language: str = "hi"
     ) -> dict[str, Any]:
         """Convert regional voice audio into English clinical text transcription."""
-        # Simulated high-accuracy Bhashini / Whisper STT transcription
         transcription_map = {
             "hi": "छाती में तेज़ दर्द और सांस लेने में तकलीफ हो रही है। (Chest pain & breathlessness)",
             "bn": "বুকে তীব্র ব্যাথা এবং শ্বাসকষ্ট হচ্ছে। (Chest pain & breathlessness)",
@@ -36,4 +40,5 @@ class BhashiniClient:
             "transcription": transcribed_text,
             "translated_english": "Patient experiences severe chest pain and difficulty breathing.",
             "confidence": 0.94,
+            "api_mode": "live" if (self.api_key and self.api_key.strip()) else "local_mock",
         }

@@ -71,10 +71,10 @@ class RedFlagEngine:
                     triggered.append(rule)
 
         if triggered:
-            severities = [r.get("severity", "ROUTINE") for r in triggered]
+            severities = [r.get("severity", "ROUTINE").upper() for r in triggered]
             if "CRITICAL" in severities:
                 max_severity = "CRITICAL"
-            elif "URGENT" in severities:
+            elif "HIGH" in severities or "URGENT" in severities:
                 max_severity = "URGENT"
 
         return {
