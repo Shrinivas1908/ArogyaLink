@@ -23,6 +23,7 @@ from pydantic import ValidationError
 
 from app.api.v1 import audit as audit_router
 from app.api.v1 import doctor_queue as doctor_queue_router
+from app.api.v1 import fhir as fhir_router
 from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
 from app.api.v1 import ocr as ocr_router
@@ -101,6 +102,7 @@ def create_app() -> FastAPI:
     app.include_router(voice_router.router)
     app.include_router(summary_router.router)
     app.include_router(audit_router.router)
+    app.include_router(fhir_router.router)
 
     return app
 
