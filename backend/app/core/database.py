@@ -16,11 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
-# Async engine — uses asyncpg for PostgreSQL
+from sqlalchemy.pool import NullPool
+
+# Async engine — uses asyncpg for PostgreSQL with NullPool for clean connection lifecycle
 engine = create_async_engine(
     settings.database_url,
     echo=settings.app_env == "development",
     pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args={"statement_cache_size": 0},
 )
 

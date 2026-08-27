@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.api.v1 import health as health_router
+from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
 from app.core.config import settings
 
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
     # ── Routers ──────────────────────────────────────────────────────────
     app.include_router(health_router.router)
     app.include_router(staff_router.router)
+    app.include_router(session_router.router)
 
     return app
 
