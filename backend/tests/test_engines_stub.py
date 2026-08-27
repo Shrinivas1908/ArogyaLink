@@ -97,13 +97,11 @@ def test_contradiction_engine_raises():
 
 
 def test_offline_sync_engine_raises():
+    """Phase 13: OfflineSyncEngine is implemented."""
     from app.engines.offline_sync_engine import OfflineSyncEngine
 
     engine = OfflineSyncEngine()
-    with pytest.raises(NotImplementedError):
-        engine.merge_answers("enc_test", [])
-    with pytest.raises(NotImplementedError):
-        engine.validate_batch([])
+    assert hasattr(engine, "sync_offline_batch")
 
 
 # ===========================================================================

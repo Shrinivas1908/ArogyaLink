@@ -27,6 +27,7 @@ from app.api.v1 import fhir as fhir_router
 from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
 from app.api.v1 import ocr as ocr_router
+from app.api.v1 import offline_sync as offline_sync_router
 from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
 from app.api.v1 import summary as summary_router
@@ -103,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(summary_router.router)
     app.include_router(audit_router.router)
     app.include_router(fhir_router.router)
+    app.include_router(offline_sync_router.router)
 
     return app
 
