@@ -1,8 +1,13 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
+    background-color: rgba(240, 249, 255, 0.5);
+    color: #1e293b;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
