@@ -16,8 +16,16 @@ export default function Header() {
         
         {/* Brand Logo */}
         <a href="#" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition-transform">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition-transform">
+            <svg
+              className="w-6 h-6 text-white shrink-0"
+              width="24"
+              height="24"
+              style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
           </div>
@@ -31,39 +39,27 @@ export default function Header() {
           </div>
         </a>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-          <a href="#features" className="hover:text-sky-600 transition-colors">Platform Features</a>
-          <a href="#teleconsult" className="hover:text-sky-600 transition-colors">Tele-Consultation</a>
-          <a href="#triage" className="hover:text-sky-600 transition-colors">Emergency Triage</a>
-          <a href="#digital-health" className="hover:text-sky-600 transition-colors">ABHA Health Card</a>
-        </nav>
+        {/* Backend Status Badge */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-xs font-bold text-sky-900 shadow-sm">
+          <span className={`w-2 h-2 rounded-full ${health.status === 'ok' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+          <span>Backend: {health.status === 'ok' ? 'Online' : health.status}</span>
+        </div>
 
-        {/* Action Buttons & Status */}
-        <div className="flex items-center gap-4">
-          {/* Live System Status */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-200 text-xs">
-            <span className={`w-2 h-2 rounded-full ${health.status === 'ok' ? 'bg-sky-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-slate-500">Backend API:</span>
-            <span className={`font-bold ${health.status === 'ok' ? 'text-sky-600' : 'text-red-500'}`}>
-              {health.status === 'ok' ? 'Online' : 'Offline'}
-            </span>
-          </div>
-
+        {/* Portal Switching Links */}
+        <div className="flex items-center gap-3 text-xs font-bold">
           <a
             href="http://localhost:5173"
             target="_blank"
             rel="noreferrer"
-            className="hidden lg:inline-flex px-4 py-2 rounded-xl text-xs font-bold bg-white text-sky-700 border border-sky-200 hover:bg-sky-50 hover:border-sky-300 transition shadow-sm"
+            className="px-4 py-2 rounded-xl bg-white text-sky-800 border border-sky-200 hover:bg-sky-50 transition shadow-sm"
           >
             Patient Kiosk (5173)
           </a>
-
           <a
             href="http://localhost:5174"
             target="_blank"
             rel="noreferrer"
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-500 text-white shadow-md shadow-sky-500/25 hover:bg-sky-600 transition"
+            className="px-4 py-2 rounded-xl bg-sky-500 text-white shadow-md shadow-sky-500/25 hover:bg-sky-600 transition"
           >
             Doctor Portal (5174)
           </a>

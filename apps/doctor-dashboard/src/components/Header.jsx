@@ -1,3 +1,4 @@
+import React from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Header() {
@@ -9,8 +10,16 @@ export default function Header() {
         
         {/* Brand Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+            <svg
+              className="w-6 h-6 text-white shrink-0"
+              width="24"
+              height="24"
+              style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
           </div>
