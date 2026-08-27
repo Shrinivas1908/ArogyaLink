@@ -1,13 +1,10 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
-    background-color: rgba(240, 249, 255, 0.5);
-    color: #1e293b;
+    background-color: #f0f9ff;
+    color: #0f172a;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
@@ -23,7 +20,7 @@
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid #e0f2fe;
   box-shadow: 0 4px 20px -2px rgba(14, 165, 233, 0.08);
