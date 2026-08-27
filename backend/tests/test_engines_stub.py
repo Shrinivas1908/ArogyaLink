@@ -69,15 +69,13 @@ def test_engines_package_all():
 
 
 def test_question_engine_raises():
+    """Phase 4: QuestionEngine is implemented and returns valid question definitions."""
     from app.engines.question_engine import QuestionEngine
 
     engine = QuestionEngine()
-    with pytest.raises(NotImplementedError):
-        engine.next_question("enc_test", {})
-    with pytest.raises(NotImplementedError):
-        engine.is_complete({})
-    with pytest.raises(NotImplementedError):
-        engine.record_answer("enc_test", "q1", "value")
+    q = engine.next_question("enc_test", {})
+    assert q is not None
+    assert engine.is_complete({}) is False
 
 
 def test_red_flag_engine_raises():

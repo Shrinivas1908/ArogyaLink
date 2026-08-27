@@ -1,28 +1,23 @@
 {
-  "_comment": "Arogya Link — questions.json | Question Bank Skeleton",
+  "_comment": "Arogya Link — questions.json | Adaptive Clinical Intake Question Bank",
   "_phase": "Phase 4 — Adaptive Clinical Intake",
-  "_instructions": [
-    "Replace this skeleton with the full question bank before Phase 4 implementation.",
-    "Each question object must contain: id, text, type, options (if applicable),",
-    "  next_map (branching rules keyed by answer value), required, and category.",
-    "The backend QuestionEngine reads this file at startup.",
-    "Do NOT store patient PII in this file."
-  ],
-  "version": "0.0.1-skeleton",
+  "version": "1.0.0",
+  "start_question_id": "q_chief_complaint",
   "questions": [
     {
       "id": "q_chief_complaint",
-      "text": "What is your main health concern today?",
+      "text": "What main symptoms or health concerns are you experiencing today?",
       "type": "multi_select",
       "category": "chief_complaint",
       "required": true,
       "options": [
-        { "value": "chest_pain",    "label": "Chest pain or tightness" },
-        { "value": "breathlessness","label": "Difficulty breathing" },
-        { "value": "fever",         "label": "Fever" },
-        { "value": "headache",      "label": "Headache" },
-        { "value": "abdominal_pain","label": "Stomach / abdominal pain" },
-        { "value": "other",         "label": "Something else" }
+        { "value": "chest_pain", "label": "Chest pain or tightness" },
+        { "value": "breathlessness", "label": "Difficulty breathing / Shortness of breath" },
+        { "value": "fever", "label": "Fever or chills" },
+        { "value": "headache", "label": "Severe headache" },
+        { "value": "abdominal_pain", "label": "Stomach or abdominal pain" },
+        { "value": "dizziness", "label": "Dizziness or fainting" },
+        { "value": "other", "label": "Other general discomfort" }
       ],
       "next_map": {
         "_default": "q_duration"
@@ -30,15 +25,105 @@
     },
     {
       "id": "q_duration",
-      "text": "How long have you had this problem?",
+      "text": "How long have you had these symptoms?",
       "type": "single_select",
       "category": "symptom_history",
       "required": true,
       "options": [
-        { "value": "today",       "label": "Started today" },
-        { "value": "2_3_days",    "label": "2–3 days" },
-        { "value": "1_week",      "label": "About a week" },
-        { "value": "more_1_week", "label": "More than a week" }
+        { "value": "today", "label": "Started today (< 24 hours)" },
+        { "value": "2_3_days", "label": "2–3 days" },
+        { "value": "1_week", "label": "About 1 week" },
+        { "value": "more_1_week", "label": "More than 1 week" }
+      ],
+      "next_map": {
+        "_default": "q_severity"
+      }
+    },
+    {
+      "id": "q_severity",
+      "text": "How would you rate the severity of your discomfort?",
+      "type": "single_select",
+      "category": "symptom_history",
+      "required": true,
+      "options": [
+        { "value": "mild", "label": "Mild (Noticeable but does not restrict activity)" },
+        { "value": "moderate", "label": "Moderate (Interferes with daily routine)" },
+        { "value": "severe", "label": "Severe (Incapacitating or unbearable)" }
+      ],
+      "next_map": {
+        "_default": "q_associated_symptoms"
+      }
+    },
+    {
+      "id": "q_associated_symptoms",
+      "text": "Are you experiencing any of these accompanying symptoms?",
+      "type": "multi_select",
+      "category": "associated_symptoms",
+      "required": false,
+      "options": [
+        { "value": "sweating", "label": "Profuse cold sweating" },
+        { "value": "nausea", "label": "Nausea or vomiting" },
+        { "value": "cough", "label": "Persistent cough" },
+        { "value": "radiation_arm", "label": "Pain radiating to left arm / jaw" },
+        { "value": "none", "label": "None of the above" }
+      ],
+      "next_map": {
+        "_default": "q_medical_history"
+      }
+    },
+    {
+      "id": "q_medical_history",
+      "text": "Do you have a diagnosis of any chronic medical conditions?",
+      "type": "multi_select",
+      "category": "medical_history",
+      "required": false,
+      "options": [
+        { "value": "diabetes", "label": "Diabetes (High blood sugar)" },
+        { "value": "hypertension", "label": "Hypertension (High blood pressure)" },
+        { "value": "asthma", "label": "Asthma / COPD" },
+        { "value": "heart_disease", "label": "Heart condition / Prior surgery" },
+        { "value": "none", "label": "No known chronic conditions" }
+      ],
+      "next_map": {
+        "_default": "q_medications"
+      }
+    },
+    {
+      "id": "q_medications",
+      "text": "Are you currently taking any prescription medications?",
+      "type": "single_select",
+      "category": "medications",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "Yes, taking medications" },
+        { "value": "no", "label": "No medications currently" }
+      ],
+      "next_map": {
+        "yes": "q_medication_details",
+        "no": "q_allergies",
+        "_default": "q_allergies"
+      }
+    },
+    {
+      "id": "q_medication_details",
+      "text": "Please enter the names of your current medications (or 'Not sure'):",
+      "type": "text",
+      "category": "medications",
+      "required": false,
+      "options": [],
+      "next_map": {
+        "_default": "q_allergies"
+      }
+    },
+    {
+      "id": "q_allergies",
+      "text": "Do you have any known drug or food allergies?",
+      "type": "single_select",
+      "category": "allergies",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "Yes, I have known allergies" },
+        { "value": "no", "label": "No known allergies" }
       ],
       "next_map": {
         "_default": null

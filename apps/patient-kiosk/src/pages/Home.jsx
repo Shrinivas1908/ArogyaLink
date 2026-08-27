@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import IntakeQuestionnaire from '../components/IntakeQuestionnaire'
 
 /**
- * Patient Kiosk — Home Page (Phase 3: Patient Session & Consent)
- * Manages kiosk check-in flow: Landing -> Demographics -> Consent -> Active Session.
+ * Patient Kiosk — Home Page (Phase 4: Adaptive Clinical Intake)
+ * Manages kiosk check-in flow: Landing -> Demographics -> Consent -> Adaptive Questionnaire.
  */
 export default function Home() {
   const [backendStatus, setBackendStatus] = useState('checking')
@@ -118,14 +119,14 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 px-6 py-8 max-w-2xl mx-auto w-full">
+    <div className="flex flex-col items-center justify-center flex-1 px-6 py-8 max-w-2xl mx-auto w-full space-y-6">
       {/* Backend health indicator */}
-      <div className={`text-xs font-medium px-3 py-1 rounded-full mb-6 ${statusColor}`}>
+      <div className={`text-xs font-medium px-3 py-1 rounded-full ${statusColor}`}>
         Backend: {backendStatus}
       </div>
 
       {error && (
-        <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl text-center">
+        <div className="w-full p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl text-center">
           {error}
         </div>
       )}
@@ -273,31 +274,23 @@ export default function Home() {
         </div>
       )}
 
-      {/* STEP 4: ACTIVE SESSION */}
+      {/* STEP 4: ADAPTIVE QUESTIONNAIRE */}
       {step === 'active' && (
-        <div className="w-full bg-white rounded-2xl shadow-lg p-6 text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-            <span className="w-2 h-2 rounded-full bg-green-500" /> Session Active & Consented
+        <div className="w-full space-y-6">
+          <div className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between border border-slate-200 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="font-bold text-slate-700">Patient: {formData.fullName || 'Anonymous Check-in'}</span>
+            </div>
+            <button
+              onClick={handleReset}
+              className="text-red-600 hover:underline font-semibold"
+            >
+              End Session & Reset
+            </button>
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-800">Check-In Session Ready</h2>
-
-          <div className="bg-slate-50 p-4 rounded-xl text-left text-sm space-y-2 border border-slate-200">
-            <p><strong className="text-slate-700">Encounter ID:</strong> <span className="font-mono text-blue-700 text-xs">{session?.encounter_id}</span></p>
-            <p><strong className="text-slate-700">Patient ID:</strong> <span className="font-mono text-slate-600 text-xs">{session?.patient_id}</span></p>
-            <p><strong className="text-slate-700">Patient:</strong> {formData.fullName || 'Anonymous Check-in'} ({formData.gender}, {formData.age || '—'} yrs)</p>
-          </div>
-
-          <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-xl">
-            Adaptive Clinical Questionnaire begins here in Phase 4.
-          </div>
-
-          <button
-            onClick={handleReset}
-            className="w-full py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-100 transition"
-          >
-            End Session & Reset Kiosk
-          </button>
+          <IntakeQuestionnaire encounterId={session?.encounter_id} />
         </div>
       )}
     </div>
