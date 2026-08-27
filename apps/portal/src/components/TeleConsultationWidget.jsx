@@ -5,7 +5,6 @@ export default function TeleConsultationWidget() {
   const [selectedDoctor, setSelectedDoctor] = useState('Dr. Ananya Roy')
   const [selectedSlot, setSelectedSlot] = useState('10:30 AM Today')
   const [patientName, setPatientName] = useState('')
-  const [symptoms, setSymptoms] = useState(['Fever', 'Cough'])
   const [bookedToken, setBookedToken] = useState(null)
 
   const doctors = {
@@ -41,50 +40,51 @@ export default function TeleConsultationWidget() {
 
   return (
     <section id="teleconsult" className="py-16 px-6 max-w-7xl mx-auto">
-      <div className="glass-panel rounded-3xl p-8 sm:p-10 border border-slate-800 relative overflow-hidden">
+      <div className="glass-panel rounded-3xl p-8 sm:p-10 border border-sky-200 bg-white/90 shadow-lg relative overflow-hidden">
+        
         {/* Glow backdrop */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 blur-[100px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-200/40 blur-[100px] pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           
           {/* Left Column: Descriptions */}
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-400 text-xs font-semibold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold uppercase tracking-wider">
               Tele-Consultation & Appointment Booking
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
               Connect Remote Patients with Specialist Doctors Instantly
             </h2>
 
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
               Patients at rural kiosks or on mobile devices can generate a digital consultation token, select their preferred clinical department, and share pre-intake symptom records directly with verifying doctors.
             </p>
 
             <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3 text-sm text-slate-300">
-                <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">✓</div>
+              <div className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-5 h-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
                 <span>Automated Symptom Pre-Intake attached to booking token</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-slate-300">
-                <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">✓</div>
+              <div className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-5 h-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
                 <span>Integrative AYUSH and Allopathic specialty routing</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-slate-300">
-                <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">✓</div>
+              <div className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-5 h-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
                 <span>Instant QR-code digital prescription dispatch</span>
               </div>
             </div>
           </div>
 
           {/* Right Column: Booking Widget Form */}
-          <div className="glass-card p-6 sm:p-8 rounded-2xl border border-slate-700/80 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-700/80 pb-4">
+          <div className="bg-sky-50/60 p-6 sm:p-8 rounded-2xl border border-sky-200 space-y-6 shadow-sm">
+            <div className="flex items-center justify-between border-b border-sky-200 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Book Doctor Consultation</h3>
-                <p className="text-xs text-slate-400">Select department, doctor, and slot</p>
+                <h3 className="text-lg font-bold text-slate-900">Book Doctor Consultation</h3>
+                <p className="text-xs text-slate-500">Select department, doctor, and slot</p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-teal-900/60 text-teal-300 rounded-full border border-teal-700/50">
+              <span className="text-xs font-bold px-2.5 py-1 bg-sky-200 text-sky-800 rounded-full border border-sky-300">
                 Live Interactive Widget
               </span>
             </div>
@@ -94,7 +94,7 @@ export default function TeleConsultationWidget() {
                 
                 {/* Specialization */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Select Department
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -106,10 +106,10 @@ export default function TeleConsultationWidget() {
                           setSpecialization(dept)
                           setSelectedDoctor(doctors[dept][0].name)
                         }}
-                        className={`px-3 py-2 rounded-xl text-xs font-medium border text-left transition ${
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold border text-left transition ${
                           specialization === dept
-                            ? 'bg-teal-500/20 border-teal-400 text-teal-300 font-semibold'
-                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+                            ? 'bg-sky-500 border-sky-500 text-white shadow-sm'
+                            : 'bg-white border-sky-200 text-slate-700 hover:border-sky-300'
                         }`}
                       >
                         {dept}
@@ -120,13 +120,13 @@ export default function TeleConsultationWidget() {
 
                 {/* Doctor Selection */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Select Doctor
                   </label>
                   <select
                     value={selectedDoctor}
                     onChange={(e) => setSelectedDoctor(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm outline-none focus:border-teal-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-sky-200 text-slate-800 text-sm outline-none focus:border-sky-500 font-medium shadow-sm"
                   >
                     {doctors[specialization].map((doc) => (
                       <option key={doc.name} value={doc.name}>
@@ -138,7 +138,7 @@ export default function TeleConsultationWidget() {
 
                 {/* Slot Picker */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Consultation Slot
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -147,10 +147,10 @@ export default function TeleConsultationWidget() {
                         type="button"
                         key={slot}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`px-3 py-2 rounded-xl text-xs text-center border transition ${
+                        className={`px-3 py-2 rounded-xl text-xs text-center font-semibold border transition ${
                           selectedSlot === slot
-                            ? 'bg-indigo-600/30 border-indigo-400 text-indigo-300 font-semibold'
-                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+                            ? 'bg-sky-600 border-sky-600 text-white shadow-sm'
+                            : 'bg-white border-sky-200 text-slate-700 hover:border-sky-300'
                         }`}
                       >
                         {slot}
@@ -161,7 +161,7 @@ export default function TeleConsultationWidget() {
 
                 {/* Patient Name */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Patient Name
                   </label>
                   <input
@@ -169,39 +169,39 @@ export default function TeleConsultationWidget() {
                     placeholder="e.g. Aarav Sharma"
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm outline-none focus:border-teal-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-sky-200 text-slate-800 text-sm outline-none focus:border-sky-500 font-medium shadow-sm"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-teal-500/20 hover:opacity-95 transition"
+                  className="w-full py-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition"
                 >
                   Generate Tele-Consultation Token →
                 </button>
               </form>
             ) : (
-              <div className="bg-slate-900 border border-teal-500/40 p-6 rounded-2xl space-y-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center mx-auto text-2xl font-bold">
+              <div className="bg-white border border-sky-300 p-6 rounded-2xl space-y-4 text-center shadow-md">
+                <div className="w-12 h-12 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center mx-auto text-2xl font-bold">
                   ✓
                 </div>
                 <div>
-                  <span className="text-xs font-mono text-teal-400 uppercase tracking-widest block">
+                  <span className="text-xs font-mono font-bold text-sky-600 uppercase tracking-widest block">
                     Digital Token Created
                   </span>
-                  <h4 className="text-3xl font-extrabold text-white font-mono mt-1">{bookedToken.token}</h4>
+                  <h4 className="text-3xl font-extrabold text-slate-900 font-mono mt-1">{bookedToken.token}</h4>
                 </div>
 
-                <div className="bg-slate-950 p-4 rounded-xl text-left text-xs space-y-2 border border-slate-800">
-                  <p><strong className="text-slate-400">Doctor:</strong> <span className="text-slate-200">{bookedToken.doctor}</span></p>
-                  <p><strong className="text-slate-400">Department:</strong> <span className="text-slate-200">{bookedToken.specialization}</span></p>
-                  <p><strong className="text-slate-400">Patient:</strong> <span className="text-slate-200">{bookedToken.patient}</span></p>
-                  <p><strong className="text-slate-400">Slot:</strong> <span className="text-teal-300 font-semibold">{bookedToken.slot}</span></p>
+                <div className="bg-sky-50 p-4 rounded-xl text-left text-xs space-y-2 border border-sky-200">
+                  <p><strong className="text-slate-600">Doctor:</strong> <span className="text-slate-900 font-semibold">{bookedToken.doctor}</span></p>
+                  <p><strong className="text-slate-600">Department:</strong> <span className="text-slate-900 font-semibold">{bookedToken.specialization}</span></p>
+                  <p><strong className="text-slate-600">Patient:</strong> <span className="text-slate-900 font-semibold">{bookedToken.patient}</span></p>
+                  <p><strong className="text-slate-600">Slot:</strong> <span className="text-sky-700 font-bold">{bookedToken.slot}</span></p>
                 </div>
 
                 <button
                   onClick={() => setBookedToken(null)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+                  className="px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded-xl text-xs font-bold transition"
                 >
                   Book Another Appointment
                 </button>

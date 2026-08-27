@@ -26,31 +26,31 @@ export default function SymptomTriageWidget() {
   )
 
   const triageResult = hasCritical
-    ? { level: 'EMERGENCY RED-FLAG', color: 'border-red-500 bg-red-950/40 text-red-400', badge: 'bg-red-500 text-white', status: 'Immediate Priority Triage & Escalation Triggered' }
+    ? { level: 'EMERGENCY RED-FLAG', color: 'border-red-300 bg-red-50 text-red-800', badge: 'bg-red-600 text-white', status: 'Immediate Priority Triage & Escalation Triggered' }
     : selectedSymptoms.length > 0
-    ? { level: 'ROUTINE CLINICAL REVIEW', color: 'border-blue-500 bg-blue-950/40 text-blue-400', badge: 'bg-blue-500 text-white', status: 'Standard Queue Assignment' }
-    : { level: 'NO SYMPTOMS SELECTED', color: 'border-slate-800 bg-slate-900 text-slate-500', badge: 'bg-slate-700 text-slate-300', status: 'Select symptoms above to evaluate' }
+    ? { level: 'ROUTINE CLINICAL REVIEW', color: 'border-sky-300 bg-sky-50 text-sky-900', badge: 'bg-sky-500 text-white', status: 'Standard Queue Assignment' }
+    : { level: 'NO SYMPTOMS SELECTED', color: 'border-slate-200 bg-white text-slate-500', badge: 'bg-slate-200 text-slate-700', status: 'Select symptoms above to evaluate' }
 
   return (
     <section id="triage" className="py-16 px-6 max-w-7xl mx-auto">
       <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
-        <span className="text-xs font-semibold px-3 py-1 bg-red-900/40 border border-red-700/50 text-red-300 rounded-full uppercase tracking-widest">
+        <span className="text-xs font-bold px-3 py-1 bg-red-100 border border-red-300 text-red-700 rounded-full uppercase tracking-widest">
           Deterministic Safety Engine
         </span>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
           Real-Time Red-Flag Triage Simulator
         </h2>
-        <p className="text-slate-400 text-sm sm:text-base">
+        <p className="text-slate-600 text-sm sm:text-base">
           Our Python rule engine evaluates intake symptoms deterministically without AI hallucination risk, guaranteeing instant emergency escalation when critical red flags are detected.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Symptom Selection Panel */}
-        <div className="glass-card p-6 sm:p-8 rounded-2xl border border-slate-700 space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-sky-200 space-y-6 shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-white">Select Patient Symptoms</h3>
-            <span className="text-xs text-slate-400 font-mono">Touch Kiosk Input</span>
+            <h3 className="text-lg font-bold text-slate-900">Select Patient Symptoms</h3>
+            <span className="text-xs text-sky-600 font-mono font-semibold">Touch Kiosk Input</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -63,9 +63,9 @@ export default function SymptomTriageWidget() {
                   className={`p-3.5 rounded-xl border text-left text-xs font-semibold transition-all flex items-center justify-between ${
                     isSelected
                       ? item.severe
-                        ? 'bg-red-500/20 border-red-400 text-red-300'
-                        : 'bg-teal-500/20 border-teal-400 text-teal-300'
-                      : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700'
+                        ? 'bg-red-50 border-red-400 text-red-700 font-bold shadow-sm'
+                        : 'bg-sky-500 border-sky-500 text-white font-bold shadow-sm'
+                      : 'bg-white border-sky-200 text-slate-700 hover:border-sky-300'
                   }`}
                 >
                   <span>{item.label}</span>
@@ -77,9 +77,9 @@ export default function SymptomTriageWidget() {
         </div>
 
         {/* Live Triage Evaluation Output */}
-        <div className={`p-6 sm:p-8 rounded-2xl border transition-all space-y-6 ${triageResult.color}`}>
+        <div className={`p-6 sm:p-8 rounded-2xl border transition-all space-y-6 shadow-md ${triageResult.color}`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-400">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-600">
               Triage Output Matrix
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${triageResult.badge}`}>
@@ -88,8 +88,8 @@ export default function SymptomTriageWidget() {
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-2xl font-bold text-white">{triageResult.status}</h4>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <h4 className="text-2xl font-bold text-slate-900">{triageResult.status}</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
               {hasCritical
                 ? 'CRITICAL WARNING: High-severity red flags detected. System dispatches immediate WebSocket escalation to on-duty doctors and triggers priority alert banner.'
                 : 'Routine clinical consultation scheduled. All responses logged for doctor summary review.'}
@@ -97,11 +97,11 @@ export default function SymptomTriageWidget() {
           </div>
 
           {/* Evidence Log Mockup */}
-          <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-1.5">
-            <p className="text-slate-500">// Rule Evaluation Log (Phase 5 Engine):</p>
+          <div className="bg-white/90 p-4 rounded-xl border border-sky-200 text-xs font-mono space-y-1.5 shadow-inner">
+            <p className="text-slate-400">// Rule Evaluation Log (Phase 5 Engine):</p>
             {selectedSymptoms.map((sym) => (
-              <p key={sym} className="text-slate-300">
-                &gt; EVALUATE: <span className="text-teal-400">{sym}</span> → Match: {availableSymptoms.find(s => s.label === sym)?.severe ? <span className="text-red-400 font-bold">RED_FLAG_CRITICAL</span> : <span className="text-blue-400">ROUTINE</span>}
+              <p key={sym} className="text-slate-800">
+                &gt; EVALUATE: <span className="text-sky-600 font-bold">{sym}</span> → Match: {availableSymptoms.find(s => s.label === sym)?.severe ? <span className="text-red-600 font-bold">RED_FLAG_CRITICAL</span> : <span className="text-sky-700 font-bold">ROUTINE</span>}
               </p>
             ))}
           </div>
