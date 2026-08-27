@@ -27,6 +27,7 @@ from app.api.v1 import intake as intake_router
 from app.api.v1 import ocr as ocr_router
 from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
+from app.api.v1 import summary as summary_router
 from app.api.v1 import triage as triage_router
 from app.api.v1 import voice as voice_router
 from app.api.v1 import ws_notifications as ws_router
@@ -97,6 +98,7 @@ def create_app() -> FastAPI:
     app.include_router(ws_router.router)
     app.include_router(ocr_router.router)
     app.include_router(voice_router.router)
+    app.include_router(summary_router.router)
 
     return app
 

@@ -1,64 +1,32 @@
 """
-Arogya Link — LLMService (stub)
-=================================
-Phase: 10 — Gemini Clinical Summary
-
-Responsibility
---------------
-The single Gemini integration point.  Accepts a controlled, normalized set of
-structured inputs (touch answers, confirmed voice answers, OCR-verified fields,
-triggered red flags) and calls the Gemini API via ``GeminiClient`` to produce a
-schema-validated draft clinical summary.
-
-Safety constraints (non-negotiable, from Rules.md)
----------------------------------------------------
-* Gemini must NEVER set or override emergency priority — that is
-  RedFlagEngine's authoritative output.
-* The Gemini response must be validated against ``ClinicalSummarySchema``
-  (Pydantic) before being stored or displayed.
-* The generated summary is a DRAFT; the doctor must review and approve it.
-* Doctor approval is an explicit action logged via AuditService.
-* LLM service must not be called unless OCR and deterministic intake are
-  complete (Phase Gate Principle from Phases.md).
-
-Implementation target: Phase 10
+Arogya Link — services/llm_service.py
+======================================
+Phase 10 — LLM & Gemini Summary Service.
 """
 
 from __future__ import annotations
 
 from typing import Any
-
-__all__ = ["LLMService"]
+from app.engines.contradiction_engine import ContradictionEngine
+from app.integrations.gemini_client import GeminiClient
 
 
 class LLMService:
-    """Orchestrates Gemini API calls and validates the response schema.
+    """Service combining Gemini clinical summary generation and contradiction detection."""
 
-    All public methods raise :class:`NotImplementedError` until Phase 10.
-    """
+    def __init__(self) -> None:
+        self.gemini_client = GeminiClient()
+        self.contradiction_engine = ContradictionEngine()
 
-    # ------------------------------------------------------------------
-    # Public API — stubbed for Phase 10
-    # ------------------------------------------------------------------
+    def generate_encounter_summary(
+        self, encounter_id: str, answers: dict[str, Any], ocr_text: str | None = None
+    ) -> dict[str, Any]:
+        summary_data = self.gemini_client.generate_clinical_summary(answers)
+        contradictions = self.contradiction_engine.check_contradictions(answers, ocr_text=ocr_text)
 
-    async def generate_summary(self, encounter_payload: dict[str, Any]) -> dict[str, Any]:
-        """Call Gemini with *encounter_payload* and return a validated draft.
-
-        *encounter_payload* must be a fully normalized structure containing
-        touch answers, confirmed voice answers, OCR-verified fields, and the
-        red-flag evaluation result.
-
-        Returns a dict conforming to ``ClinicalSummarySchema``.
-
-        :raises NotImplementedError: until Phase 10 is implemented.
-        """
-        raise NotImplementedError("LLMService.generate_summary — implement in Phase 10")
-
-    async def validate_response(self, raw_response: dict[str, Any]) -> dict[str, Any]:
-        """Validate *raw_response* against ``ClinicalSummarySchema``.
-
-        Raises ``ValidationError`` if the schema is not satisfied.
-
-        :raises NotImplementedError: until Phase 10 is implemented.
-        """
-        raise NotImplementedError("LLMService.validate_response — implement in Phase 10")
+        return {
+            "encounter_id": encounter_id,
+            "summary": summary_data,
+            "has_contradictions": len(contradictions) > 0,
+            "contradictions": contradictions,
+        }

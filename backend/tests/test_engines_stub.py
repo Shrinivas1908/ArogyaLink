@@ -88,11 +88,12 @@ def test_red_flag_engine_raises():
 
 
 def test_contradiction_engine_raises():
+    """Phase 10: ContradictionEngine is implemented and checks contradictions."""
     from app.engines.contradiction_engine import ContradictionEngine
 
     engine = ContradictionEngine()
-    with pytest.raises(NotImplementedError):
-        engine.detect({}, {}, {})
+    contradictions = engine.check_contradictions({})
+    assert isinstance(contradictions, list)
 
 
 def test_offline_sync_engine_raises():
