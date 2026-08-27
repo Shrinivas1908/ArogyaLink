@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
  * Adaptive Clinical Intake Questionnaire (Phase 4, 8 & 9)
  * Features: Multilingual Bhashini Voice Input, Touchpad Mode & Light White / Sky Blue Theme
  */
-export default function IntakeQuestionnaire({ encounterId, onComplete }) {
+export default function IntakeQuestionnaire({ encounterId, onComplete, onRestart }) {
   const [currentQuestion, setCurrentQuestion] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -141,17 +141,29 @@ export default function IntakeQuestionnaire({ encounterId, onComplete }) {
 
   if (isComplete) {
     return (
-      <div className="w-full bg-white rounded-3xl border border-sky-200 p-8 text-center space-y-4 shadow-lg">
-        <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-sm">
+      <div className="w-full bg-white rounded-3xl border border-sky-200 p-8 text-center space-y-6 shadow-lg">
+        <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-3xl font-bold shadow-sm">
           ✓
         </div>
-        <h3 className="text-2xl font-bold text-slate-900">Adaptive Intake Completed</h3>
-        <p className="text-sm text-slate-600 max-w-md mx-auto">
-          All required clinical intake questions have been answered and securely recorded.
-        </p>
-        <div className="p-4 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-bold rounded-2xl">
-          Deterministic Red-Flag Evaluation Triggered (Phase 5).
+        <div className="space-y-2">
+          <h3 className="text-2xl font-extrabold text-slate-900">Adaptive Intake Completed</h3>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
+            All required clinical intake questions have been answered and securely recorded into the doctor queue.
+          </p>
         </div>
+        <div className="p-4 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-bold rounded-2xl">
+          Deterministic Red-Flag Evaluation Triggered & Doctor Queue Updated.
+        </div>
+        {onRestart && (
+          <div className="pt-2">
+            <button
+              onClick={onRestart}
+              className="px-6 py-3.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition transform hover:-translate-y-0.5"
+            >
+              Start New Patient Check-In →
+            </button>
+          </div>
+        )}
       </div>
     )
   }

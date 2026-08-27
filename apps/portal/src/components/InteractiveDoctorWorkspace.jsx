@@ -1,12 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
+import React, { useState, useEffect } from 'react'
 
-/**
- * Doctor Dashboard — Main Clinical Review Workspace
- * Light White & Sky Blue Theme matching Main Portal
- */
-export default function Dashboard() {
-  const { user } = useAuth()
+export default function InteractiveDoctorWorkspace() {
   const [encounters, setEncounters] = useState([])
   const [selectedEncounter, setSelectedEncounter] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -37,7 +31,7 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // 2. Connect WebSocket for Real-Time Escalations (Phase 7)
+  // 2. Connect WebSocket for Real-Time Escalations
   useEffect(() => {
     let ws
     try {
@@ -77,7 +71,7 @@ export default function Dashboard() {
     }
   }
 
-  // 4. Handle Doctor Approval (Phase 11)
+  // 4. Handle Doctor Approval
   const handleApproveSummary = async () => {
     if (!selectedEncounter) return
     try {
@@ -95,7 +89,7 @@ export default function Dashboard() {
     }
   }
 
-  // 5. Handle Doctor Override (Phase 11)
+  // 5. Handle Doctor Override
   const handleOverrideSummary = async () => {
     if (!selectedEncounter || !overrideReason.trim()) return
     try {
@@ -118,7 +112,7 @@ export default function Dashboard() {
     }
   }
 
-  // 6. Link ABHA Digital Health Record (Phase 12)
+  // 6. Link ABHA Digital Health Record
   const handleLinkABHA = async () => {
     if (!selectedEncounter || !abhaInput.trim()) return
     try {
@@ -169,9 +163,8 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      
-      {/* Real-time Emergency Escalation Banner (Phase 7) */}
+    <div className="w-full space-y-6">
+      {/* Real-time Emergency Escalation Banner */}
       {escalationAlert && (
         <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-4 flex items-center justify-between shadow-xl animate-pulse">
           <div className="flex items-center gap-3">
@@ -204,12 +197,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Workspace Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-panel p-6 rounded-3xl shadow-sm">
+      {/* Workspace Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-panel p-6 rounded-3xl shadow-sm bg-white/90">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-sky-600">On-Duty Clinical Queue</span>
-          <h1 className="text-3xl font-extrabold text-slate-900">Doctor Review Workspace</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">
+          <h3 className="text-2xl font-extrabold text-slate-900">Doctor Review Workspace</h3>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
             Real-time deterministic red-flag triage, Gemini AI summaries & ABDM interoperability.
           </p>
         </div>
@@ -220,7 +213,7 @@ export default function Dashboard() {
             <button
               key={sev}
               onClick={() => setFilterSeverity(sev)}
-              className={`px-3.5 py-2 rounded-xl transition ${
+              className={`px-3 py-1.5 rounded-xl transition ${
                 filterSeverity === sev
                   ? 'bg-white text-sky-900 shadow-sm font-extrabold border border-sky-200'
                   : 'text-slate-600 hover:text-slate-900'
@@ -237,16 +230,16 @@ export default function Dashboard() {
         
         {/* Left Column: Live Queue List (5 cols) */}
         <div className="lg:col-span-5 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
             Triage Queue ({filteredEncounters.length} Patients)
-          </h3>
+          </h4>
 
           {loading && filteredEncounters.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-sky-200 p-8 text-center text-slate-400 font-semibold">
+            <div className="bg-white rounded-3xl border border-sky-200 p-8 text-center text-slate-400 font-semibold text-xs">
               Loading clinical queue…
             </div>
           ) : filteredEncounters.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-sky-200 p-8 text-center text-slate-500 font-medium">
+            <div className="bg-white rounded-3xl border border-sky-200 p-8 text-center text-slate-500 font-medium text-xs">
               No patients matching severity filter.
             </div>
           ) : (
@@ -285,13 +278,13 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <h4 className="text-base font-bold text-slate-900 mt-2">
+                  <h5 className="text-base font-bold text-slate-900 mt-2">
                     {enc.patient_name || 'Anonymous Patient'}
-                  </h4>
+                  </h5>
 
                   <div className="flex items-center justify-between text-xs text-slate-500 mt-3 pt-3 border-t border-sky-100">
                     <span>Status: <strong className="text-slate-800">{enc.status}</strong></span>
-                    <span className="text-sky-600 font-bold group-hover:translate-x-1 transition-transform">
+                    <span className="text-sky-600 font-bold">
                       Review Bundle →
                     </span>
                   </div>
@@ -312,9 +305,9 @@ export default function Dashboard() {
                   <span className="text-xs font-mono font-bold text-slate-400">
                     ID: {selectedEncounter.encounter_id}
                   </span>
-                  <h2 className="text-2xl font-extrabold text-slate-900">
+                  <h3 className="text-2xl font-extrabold text-slate-900">
                     {selectedEncounter.patient?.full_name || 'Patient Intake File'}
-                  </h2>
+                  </h3>
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-500 font-semibold block">Triage Classification</span>
@@ -324,12 +317,12 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Gemini AI Clinical Summary (Phase 10) */}
+              {/* Gemini AI Clinical Summary */}
               {selectedEncounter.gemini_summary && (
                 <div className="p-5 rounded-2xl bg-sky-50/70 border border-sky-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold uppercase tracking-wider text-sky-800">
-                      Gemini 2.5 AI Clinical Synthesis
+                      Gemini AI Clinical Synthesis
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 bg-sky-200 text-sky-900 rounded-md">
                       Pydantic Verified
@@ -358,7 +351,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Contradiction Detection Flags (Phase 10) */}
+              {/* Contradiction Detection Flags */}
               {selectedEncounter.contradictions?.has_contradiction && (
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800">
@@ -372,7 +365,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* Doctor Approval & Override Controls (Phase 11) */}
+              {/* Doctor Approval & Override Controls */}
               <div className="p-5 rounded-2xl bg-slate-50 border border-sky-100 space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   Doctor Signature & Approval Actions
@@ -420,7 +413,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* ABHA Link Form (Phase 12) */}
+              {/* ABHA Link Form */}
               <div className="p-5 rounded-2xl bg-sky-50/50 border border-sky-200 space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-sky-800">
                   ABDM Digital Health Card Linking
@@ -449,7 +442,7 @@ export default function Dashboard() {
               <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 🩺
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Select a Patient to Review</h3>
+              <h4 className="text-xl font-bold text-slate-900">Select a Patient to Review</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Click any patient encounter from the live triage queue on the left to view Gemini summaries, OCR prescriptions & FHIR bundles.
               </p>

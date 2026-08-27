@@ -10,6 +10,15 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center max-w-4xl mx-auto space-y-6">
           
+          {/* Logo */}
+          <div className="flex justify-center mb-2">
+            <img
+              src="/logo.jpg"
+              alt="ArogyaLink Logo"
+              className="h-24 w-auto object-contain drop-shadow-md animate-pulse-subtle"
+            />
+          </div>
+
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-sky-300 text-sky-700 text-xs font-bold tracking-wide uppercase shadow-sm">
             <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />

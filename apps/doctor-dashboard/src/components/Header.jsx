@@ -52,7 +52,7 @@ export default function Header() {
             Kiosk (5173)
           </a>
 
-          {user && (
+          {user ? (
             <div className="flex items-center gap-3 pl-2 border-l border-sky-200">
               <div className="text-right">
                 <span className="block text-xs font-bold text-slate-800">
@@ -64,12 +64,19 @@ export default function Header() {
               </div>
               <button
                 onClick={signOut}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-sky-100 transition text-xs font-semibold"
+                className="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-sky-100 transition text-xs font-semibold"
                 title="Sign out"
               >
                 Sign Out
               </button>
             </div>
+          ) : (
+            <a
+              href="/login"
+              className="text-xs font-bold px-4 py-2 rounded-xl bg-sky-500 text-white shadow-md shadow-sky-500/20 hover:bg-sky-600 transition"
+            >
+              Sign In
+            </a>
           )}
         </div>
       </div>

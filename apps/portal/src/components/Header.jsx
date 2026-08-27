@@ -15,25 +15,14 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:scale-105 transition-transform">
-            <svg
-              className="w-6 h-6 text-white shrink-0"
-              width="24"
-              height="24"
-              style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px' }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-          <div>
-            <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-sky-900 to-sky-600 bg-clip-text text-transparent">
-              ArogyaLink
-            </span>
-            <span className="block text-[10px] uppercase font-bold tracking-widest text-sky-600">
+        <a href="#" className="flex items-center gap-2 group">
+          <img
+            src="/logo.jpg"
+            alt="ArogyaLink Logo"
+            className="h-12 w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-sm"
+          />
+          <div className="hidden sm:block">
+            <span className="block text-[10px] uppercase font-bold tracking-widest text-teal-700">
               Doctor · Patient Health Bridge
             </span>
           </div>
@@ -45,23 +34,21 @@ export default function Header() {
           <span>Backend: {health.status === 'ok' ? 'Online' : health.status}</span>
         </div>
 
-        {/* Portal Switching Links */}
+        {/* Section Navigation Links */}
+        <div className="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
+          <a href="#features" className="hover:text-sky-600 transition">Interactive Workspaces</a>
+          <a href="#teleconsult" className="hover:text-sky-600 transition">Tele-Consultation</a>
+          <a href="#triage" className="hover:text-sky-600 transition">Red-Flag Engine</a>
+          <a href="#digital-health" className="hover:text-sky-600 transition">ABDM Health Pass</a>
+        </div>
+
+        {/* Portal Links */}
         <div className="flex items-center gap-3 text-xs font-bold">
           <a
-            href="http://localhost:5173"
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2 rounded-xl bg-white text-sky-800 border border-sky-200 hover:bg-sky-50 transition shadow-sm"
-          >
-            Patient Kiosk (5173)
-          </a>
-          <a
-            href="http://localhost:5174"
-            target="_blank"
-            rel="noreferrer"
+            href="#features"
             className="px-4 py-2 rounded-xl bg-sky-500 text-white shadow-md shadow-sky-500/25 hover:bg-sky-600 transition"
           >
-            Doctor Portal (5174)
+            Launch Workspaces →
           </a>
         </div>
       </div>

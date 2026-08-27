@@ -280,10 +280,27 @@ export default function Home() {
 
         {/* Step 4: Active Adaptive Intake Questionnaire */}
         {step === 'active' && session && (
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setStep('landing')
+                  setSession(null)
+                  setFormData({ fullName: '', age: '', gender: 'Male', phone: '' })
+                }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-slate-600 hover:bg-sky-50 transition"
+              >
+                ← Restart Intake
+              </button>
+            </div>
             <IntakeQuestionnaire
               encounterId={session.encounter_id}
               onComplete={() => console.log('Intake completed')}
+              onRestart={() => {
+                setStep('landing')
+                setSession(null)
+                setFormData({ fullName: '', age: '', gender: 'Male', phone: '' })
+              }}
             />
           </div>
         )}
@@ -292,3 +309,4 @@ export default function Home() {
     </div>
   )
 }
+
