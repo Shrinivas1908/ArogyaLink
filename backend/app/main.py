@@ -24,6 +24,7 @@ from pydantic import ValidationError
 from app.api.v1 import doctor_queue as doctor_queue_router
 from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
+from app.api.v1 import ocr as ocr_router
 from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
 from app.api.v1 import triage as triage_router
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(triage_router.router)
     app.include_router(doctor_queue_router.router)
     app.include_router(ws_router.router)
+    app.include_router(ocr_router.router)
 
     return app
 
