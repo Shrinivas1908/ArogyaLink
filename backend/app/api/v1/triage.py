@@ -17,10 +17,12 @@ from app.core.database import get_db
 from app.core.session_deps import validate_consented_encounter
 from app.engines.question_engine import QuestionEngine
 from app.engines.red_flag_engine import RedFlagEngine
+from app.services.escalation_service import EscalationService
 
 router = APIRouter(prefix="/triage", tags=["triage"])
 q_engine = QuestionEngine()
 rf_engine = RedFlagEngine()
+escalation_service = EscalationService()
 
 
 class EvaluateTriageRequest(BaseModel):
@@ -48,6 +50,14 @@ async def evaluate_triage(
     answers = await q_engine.get_answers_dict(body.encounter_id, db)
     eval_result = rf_engine.evaluate_answers(answers)
     await rf_engine.save_evaluation(body.encounter_id, eval_result, db)
+
+    # Phase 7: Trigger real-time WebSocket escalation if red flags are detected
+    if eval_result["has_red_flags"]:
+        await escalation_service.trigger_escalation(
+            encounter_id=body.encounter_id,
+            triage_level=eval_result["triage_level"],
+            red_flags=eval_result["triggered_flags"],
+        )
 
     return {
         "encounter_id": body.encounter_id,

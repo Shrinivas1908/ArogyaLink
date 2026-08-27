@@ -27,6 +27,7 @@ from app.api.v1 import intake as intake_router
 from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
 from app.api.v1 import triage as triage_router
+from app.api.v1 import ws_notifications as ws_router
 from app.core.config import settings
 
 
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(intake_router.router)
     app.include_router(triage_router.router)
     app.include_router(doctor_queue_router.router)
+    app.include_router(ws_router.router)
 
     return app
 
