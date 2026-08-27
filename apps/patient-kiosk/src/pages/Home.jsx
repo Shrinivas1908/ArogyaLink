@@ -47,7 +47,7 @@ export default function Home() {
     setError(null)
 
     try {
-      const res = await fetch('/session', {
+      const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,7 +80,7 @@ export default function Home() {
     setError(null)
 
     try {
-      const res = await fetch('/consent', {
+      const res = await fetch('/api/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
