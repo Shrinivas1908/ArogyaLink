@@ -1,0 +1,35 @@
+# Arogya Link — .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+*.db
+
+# Environment — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+apps/patient-kiosk/dist/
+apps/doctor-dashboard/dist/
+
+# Alembic
+backend/arogya_link.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/

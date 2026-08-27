@@ -1,0 +1,48 @@
+{
+  "_comment": "Arogya Link — questions.json | Question Bank Skeleton",
+  "_phase": "Phase 4 — Adaptive Clinical Intake",
+  "_instructions": [
+    "Replace this skeleton with the full question bank before Phase 4 implementation.",
+    "Each question object must contain: id, text, type, options (if applicable),",
+    "  next_map (branching rules keyed by answer value), required, and category.",
+    "The backend QuestionEngine reads this file at startup.",
+    "Do NOT store patient PII in this file."
+  ],
+  "version": "0.0.1-skeleton",
+  "questions": [
+    {
+      "id": "q_chief_complaint",
+      "text": "What is your main health concern today?",
+      "type": "multi_select",
+      "category": "chief_complaint",
+      "required": true,
+      "options": [
+        { "value": "chest_pain",    "label": "Chest pain or tightness" },
+        { "value": "breathlessness","label": "Difficulty breathing" },
+        { "value": "fever",         "label": "Fever" },
+        { "value": "headache",      "label": "Headache" },
+        { "value": "abdominal_pain","label": "Stomach / abdominal pain" },
+        { "value": "other",         "label": "Something else" }
+      ],
+      "next_map": {
+        "_default": "q_duration"
+      }
+    },
+    {
+      "id": "q_duration",
+      "text": "How long have you had this problem?",
+      "type": "single_select",
+      "category": "symptom_history",
+      "required": true,
+      "options": [
+        { "value": "today",       "label": "Started today" },
+        { "value": "2_3_days",    "label": "2–3 days" },
+        { "value": "1_week",      "label": "About a week" },
+        { "value": "more_1_week", "label": "More than a week" }
+      ],
+      "next_map": {
+        "_default": null
+      }
+    }
+  ]
+}

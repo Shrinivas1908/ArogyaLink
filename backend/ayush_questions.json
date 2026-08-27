@@ -1,0 +1,64 @@
+{
+  "_comment": "Arogya Link — ayush_questions.json | AYUSH Assessment Question Bank Skeleton",
+  "_phase": "Phase 16 — AYUSH Assessment Module",
+  "_instructions": [
+    "Replace this skeleton with the full AYUSH question bank before Phase 16 implementation.",
+    "Covers Dashavidha Pariksha (ten-fold examination) and Ahara-Vihara (diet/lifestyle).",
+    "AYUSHService reads this file at startup.",
+    "Do NOT store patient PII in this file."
+  ],
+  "version": "0.0.1-skeleton",
+  "modules": {
+    "dashavidha_pariksha": {
+      "_description": "Ten-fold Ayurvedic examination framework.",
+      "questions": [
+        {
+          "id": "ayush_prakriti",
+          "text": "Which of the following best describes your general body build?",
+          "type": "single_select",
+          "category": "prakriti",
+          "required": true,
+          "options": [
+            { "value": "vata",      "label": "Thin, light, variable energy" },
+            { "value": "pitta",     "label": "Medium build, warm, intense" },
+            { "value": "kapha",     "label": "Sturdy, calm, slow to change" },
+            { "value": "unsure",    "label": "Not sure" }
+          ],
+          "next_map": { "_default": "ayush_agni" }
+        },
+        {
+          "id": "ayush_agni",
+          "text": "How is your appetite and digestion generally?",
+          "type": "single_select",
+          "category": "agni",
+          "required": true,
+          "options": [
+            { "value": "strong",    "label": "Strong and regular" },
+            { "value": "variable",  "label": "Variable — sometimes good, sometimes not" },
+            { "value": "weak",      "label": "Weak — often feel bloated or heavy" }
+          ],
+          "next_map": { "_default": null }
+        }
+      ]
+    },
+    "ahara_vihara": {
+      "_description": "Diet and lifestyle assessment.",
+      "questions": [
+        {
+          "id": "ayush_diet_type",
+          "text": "What type of diet do you usually follow?",
+          "type": "single_select",
+          "category": "diet",
+          "required": false,
+          "options": [
+            { "value": "vegetarian",     "label": "Vegetarian" },
+            { "value": "non_vegetarian", "label": "Non-vegetarian" },
+            { "value": "vegan",          "label": "Vegan" },
+            { "value": "mixed",          "label": "Mixed / varies" }
+          ],
+          "next_map": { "_default": null }
+        }
+      ]
+    }
+  }
+}
