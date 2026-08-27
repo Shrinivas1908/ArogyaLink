@@ -1,3 +1,5 @@
+import React from 'react'
+
 export default function Footer() {
   return (
     <footer className="border-t border-sky-200 bg-white py-12 px-6">

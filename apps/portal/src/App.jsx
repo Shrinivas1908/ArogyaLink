@@ -1,3 +1,4 @@
+import React from 'react'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import RoleShowcase from './components/RoleShowcase'
@@ -8,7 +9,7 @@ import Footer from './components/Footer'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-teal-500 selection:text-white">
+    <div className="min-h-screen bg-sky-50/50 text-slate-800 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       <Header />
       <main className="flex-1 space-y-12">
         <Hero />

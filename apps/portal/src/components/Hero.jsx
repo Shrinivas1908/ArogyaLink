@@ -1,3 +1,5 @@
+import React from 'react'
+
 export default function Hero() {
   return (
     <section className="relative pt-12 pb-20 px-6 overflow-hidden bg-gradient-to-b from-sky-50/80 via-white to-sky-50/30">

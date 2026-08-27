@@ -1,3 +1,5 @@
+import React, { useState } from 'react'
+
 export default function HealthPassWidget() {
   return (
     <section id="digital-health" className="py-16 px-6 max-w-7xl mx-auto">
