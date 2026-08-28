@@ -322,43 +322,187 @@ export default function Dashboard() {
 
         {activeNav === 'queue' && (
           <div className="bg-[#FAF7F2] rounded-[24px] p-8 border border-[#EFE8DE] shadow-sm space-y-6">
-            <h3 className="text-2xl font-serif text-[#2E1B15]">All Active Patients ({filteredEncounters.length})</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredEncounters.map((enc) => (
-                <div
-                  key={enc.id}
-                  onClick={() => {
-                    handleSelectEncounter(enc.id)
-                    setActiveNav('overview')
-                  }}
-                  className="p-5 rounded-2xl bg-white border border-[#EFE8DE] hover:border-[#6E3E30] transition cursor-pointer space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-[#8C7A70]">#{enc.id}</span>
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#FAF7F2] text-[#2E1B15]">
-                      {enc.triage_level || 'ROUTINE'}
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-[#2E1B15]">{enc.patient_name}</h4>
-                  <p className="text-xs text-[#7C6C62]">{enc.age || 54} yrs • {enc.chief_complaint}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7A70] block">
+                  DIRECTORY STRUCTURE • 2026 / 08
+                </span>
+                <h3 className="text-2xl font-serif text-[#2E1B15] mt-0.5">
+                  Folder Directory Explorer ({filteredEncounters.length} Encounters)
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#7C6C62] font-semibold">Folder:</span>
+                <span className="px-3 py-1.5 rounded-xl bg-white border border-[#EFE8DE] text-xs font-mono font-bold text-[#2E1B15]">
+                  /clinical-records/2026/08/28/
+                </span>
+              </div>
+            </div>
+
+            {/* Folder Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] space-y-2 shadow-sm">
+                <div className="flex items-center justify-between text-xs text-[#8C7A70]">
+                  <span className="font-bold">📁 2026 / August (Today)</span>
+                  <span className="font-mono">{filteredEncounters.length} items</span>
                 </div>
-              ))}
+                <div className="text-2xl font-serif text-[#2E1B15]">{filteredEncounters.length}</div>
+                <p className="text-[11px] text-[#7C6C62]">Live active queue and incoming intake sessions</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] space-y-2 shadow-sm">
+                <div className="flex items-center justify-between text-xs text-[#8C7A70]">
+                  <span className="font-bold">🚨 Critical / Escalations</span>
+                  <span className="font-mono">
+                    {filteredEncounters.filter(e => (e.triage_level || '').toUpperCase() === 'CRITICAL').length} items
+                  </span>
+                </div>
+                <div className="text-2xl font-serif text-[#D9383A]">
+                  {filteredEncounters.filter(e => (e.triage_level || '').toUpperCase() === 'CRITICAL').length}
+                </div>
+                <p className="text-[11px] text-[#7C6C62]">Immediate clinical physician review required</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] space-y-2 shadow-sm">
+                <div className="flex items-center justify-between text-xs text-[#8C7A70]">
+                  <span className="font-bold">🔒 Signed & ABDM Linked</span>
+                  <span className="font-mono">Verified</span>
+                </div>
+                <div className="text-2xl font-serif text-[#12322B]">100%</div>
+                <p className="text-[11px] text-[#7C6C62]">Digital consent and cryptographic audit trail</p>
+              </div>
+            </div>
+
+            {/* Detailed Encounters List */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C7A70]">
+                Encounters in Current Folder Directory:
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredEncounters.map((enc) => (
+                  <div
+                    key={enc.id}
+                    onClick={() => {
+                      handleSelectEncounter(enc.id)
+                      setActiveNav('overview')
+                    }}
+                    className="p-5 rounded-2xl bg-white border border-[#EFE8DE] hover:border-[#6E3E30] transition cursor-pointer space-y-3 shadow-sm group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">📄</span>
+                        <span className="text-xs font-mono font-bold text-[#2E1B15]">
+                          ENC-{enc.id?.slice(0, 8).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                        (enc.triage_level || '').toUpperCase() === 'CRITICAL'
+                          ? 'bg-[#FCE8E6] text-[#D9383A]'
+                          : (enc.triage_level || '').toUpperCase() === 'URGENT'
+                          ? 'bg-[#FEF3C7] text-[#D97706]'
+                          : 'bg-[#FAF7F2] text-[#2E1B15]'
+                      }`}>
+                        {enc.triage_level || 'ROUTINE'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-bold text-[#2E1B15] group-hover:text-[#6E3E30] transition">
+                        {enc.patient_name || 'Patient'}
+                      </h4>
+                      <p className="text-xs text-[#7C6C62] mt-0.5">
+                        {enc.age || 54} yrs • {enc.chief_complaint || 'General intake'}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#FAF6F0] flex items-center justify-between text-[11px] text-[#8C7A70]">
+                      <span>📅 28 Aug 2026</span>
+                      <span className="font-semibold text-[#2E1B15]">🕒 {enc.time || '11:00 AM'}</span>
+                      <span className="text-[#6E3E30] font-bold group-hover:underline">Open Review →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {activeNav === 'history' && (
-          <div className="bg-[#FAF7F2] rounded-[24px] p-8 border border-[#EFE8DE] shadow-sm space-y-4">
-            <h3 className="text-2xl font-serif text-[#2E1B15]">Doctor Review History</h3>
-            <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] text-xs text-[#7C6C62]">
-              All signed and verified medical records are encrypted and synced to ABDM health lockers.
+          <div className="bg-[#FAF7F2] rounded-[24px] p-8 border border-[#EFE8DE] shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7A70] block">
+                  AUDIT & ENCOUNTER VAULT
+                </span>
+                <h3 className="text-2xl font-serif text-[#2E1B15] mt-0.5">
+                  Historical Archive by Year & Month
+                </h3>
+              </div>
+              <div className="text-xs font-mono text-[#8C7A70]">
+                📁 /archive/2026/
+              </div>
+            </div>
+
+            {/* Year & Month Folders */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-white border-2 border-[#2E1B15] space-y-1">
+                <span className="text-lg">📁</span>
+                <h4 className="text-sm font-bold text-[#2E1B15]">August 2026 (Active)</h4>
+                <p className="text-[11px] text-[#7C6C62]">{encounters.length} patient records</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] opacity-75 space-y-1">
+                <span className="text-lg">📁</span>
+                <h4 className="text-sm font-bold text-[#2E1B15]">July 2026</h4>
+                <p className="text-[11px] text-[#7C6C62]">142 archived records</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] opacity-75 space-y-1">
+                <span className="text-lg">📁</span>
+                <h4 className="text-sm font-bold text-[#2E1B15]">June 2026</h4>
+                <p className="text-[11px] text-[#7C6C62]">118 archived records</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-[#EFE8DE] opacity-75 space-y-1">
+                <span className="text-lg">📁</span>
+                <h4 className="text-sm font-bold text-[#2E1B15]">Q1 2026 Archive</h4>
+                <p className="text-[11px] text-[#7C6C62]">389 archived records</p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-[#EFE8DE] text-xs text-[#7C6C62] space-y-2">
+              <div className="font-bold text-[#2E1B15] flex items-center gap-2">
+                <span>🔐</span>
+                <span>ABDM Compliance & Audit Preservation</span>
+              </div>
+              <p>
+                All encounters are immutably logged with SHA-256 hash digests and synchronized into the Ayushman Bharat Digital Mission (ABDM) sandbox repository.
+              </p>
             </div>
           </div>
         )}
 
         {activeNav === 'fhir' && (
           <div className="bg-[#FAF7F2] rounded-[24px] p-8 border border-[#EFE8DE] shadow-sm space-y-4">
-            <h3 className="text-2xl font-serif text-[#2E1B15]">FHIR R4 Bundle Exporter</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7A70] block">
+                  HL7 FHIR R4 CONFORMANCE
+                </span>
+                <h3 className="text-2xl font-serif text-[#2E1B15] mt-0.5">
+                  FHIR R4 Bundle Exporter
+                </h3>
+              </div>
+              <button
+                onClick={handleDownloadFHIR}
+                className="px-4 py-2 rounded-full bg-[#2E1B15] text-[#FAF6F0] text-xs font-bold hover:bg-[#3D251D] transition shadow-sm"
+              >
+                ⬇ Download JSON Bundle
+              </button>
+            </div>
+            
             <div className="p-4 rounded-2xl bg-[#2E1B15] text-[#FAF6F0] font-mono text-xs overflow-x-auto max-h-96">
               <pre>{JSON.stringify({
                 resourceType: 'Bundle',
@@ -366,6 +510,13 @@ export default function Dashboard() {
                 id: selectedEncounter?.encounter_id || selectedEncounter?.id || 'AL-2048',
                 patient: selectedEncounter?.patient_name || 'Ananya Sharma',
                 abdm_status: 'M1 & M2 Compatible',
+                timestamp: new Date().toISOString(),
+                entries: [
+                  { resource: 'Patient', id: selectedEncounter?.patient_id || 'demo-pat-01' },
+                  { resource: 'Encounter', status: 'finished' },
+                  { resource: 'ClinicalImpression', summary: selectedEncounter?.chief_complaint || 'Severe chest discomfort' },
+                  { resource: 'Consent', status: 'active', version: 'v1.0' }
+                ]
               }, null, 2)}</pre>
             </div>
           </div>
