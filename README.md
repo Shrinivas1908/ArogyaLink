@@ -6,6 +6,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8.2-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.3-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Gemini](https://img.shields.io/badge/Google_Gemini-3.6%2F3.7_Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+[![Multimodal Vision OCR](https://img.shields.io/badge/OCR-Gemini_Vision_%2B_PaddleOCR-8B5CF6.svg)](#-prescription--document-ocr-engine)
 [![Bhashini](https://img.shields.io/badge/Bhashini-ULCA_Speech_AI-FF9933.svg)](https://bhashini.gov.in)
 [![Indic Languages](https://img.shields.io/badge/Multilingual-7%2B_Indic_Languages-10B981.svg)](#-voice-touch--multilingual-architecture)
 [![DPDP Act](https://img.shields.io/badge/Privacy-DPDP_Act_2023_Compliant-0284C7.svg)](#-security-encryption--data-privacy)
@@ -17,6 +18,7 @@
 ## 📖 Table of Contents
 - [Overview](#-overview)
 - [Key Features & Modules](#-key-features--modules)
+- [Prescription & Document OCR Engine](#-prescription--document-ocr-engine)
 - [Voice, Touch & Multilingual Architecture](#-voice-touch--multilingual-architecture)
 - [Security, Encryption & Data Privacy](#-security-encryption--data-privacy)
 - [UI/UX Design System & Ergonomics](#-uiux-design-system--ergonomics)
@@ -70,6 +72,44 @@ It bridges the gap between fast multilingual patient intake and doctor workflow 
 ### 3. 🌐 Unified Showcase Portal (`http://localhost:5175`)
 - Interactive doctor-patient workflow demo with dual-screen simulation.
 - Live queue inspection, FHIR R4 JSON bundle viewer, and responsive architecture showcase.
+
+---
+
+## 📄 Prescription & Document OCR Engine
+
+ArogyaLink incorporates a multi-tier clinical document processing pipeline engineered to ingest complex, noisy Indian prescriptions, camera snapshots, and digital diagnostic lab PDFs:
+
+```
+┌───────────────────────────┐
+│ Uploaded Rx Image or PDF  │
+└─────────────┬─────────────┘
+              │
+              ├───► [Primary] Google Gemini 3.6/3.7 Multimodal Vision (Zero-shot OCR + Clinical Schema)
+              │
+              ├───► [Secondary] PyMuPDF (Direct PDF Text & Table Stream Extraction)
+              │
+              └───► [Tertiary Fallback] PaddleOCR + BioClinical-NER v2.4 (Local Deterministic Baseline)
+                            │
+                            ▼
+              ┌───────────────────────────────────────────┐
+              │     Structured Clinical Output Schema     │
+              │  • Verbatim Raw Text Transcribed          │
+              │  • Detected Medications & Strengths       │
+              │  • Posology: Frequency, Timing & Duration │
+              │  • Lab Panels & Abnormality Flags         │
+              │  • MD5 Doc Hash + SHA-256 Audit Cache     │
+              └───────────────────────────────────────────┘
+```
+
+### Extraction Capabilities & Ontologies
+
+| Entity Type | Extracted Fields | Example Clinical Output |
+| :--- | :--- | :--- |
+| **Prescription Medications** | Name, Dosage, Frequency, Duration, Pharmacological Category | `Tab. Vomilast` (10mg/10mg) — `BD (Twice daily)` x `5 Days` [`Antiemetic / Pregnancy-Safe`] |
+| **Cardio & Antibiotic Regimens** | Active compound, trade name, administration timing | `Cap. Zoclar 500` (500mg) — `OD (Morning - After Food)` x `7 Days` [`Macrolide Antibiotic`] |
+| **Diagnostic Lab Panels** | Test name, observed value, units, reference range, status | `Fasting Blood Sugar`: `138 mg/dL` (Ref: `70-99 mg/dL`) `[ELEVATED]` |
+| **Lipid & Metabolic Panels** | HbA1c, Serum Creatinine, Cholesterol, SGOT/SGPT | `HbA1c`: `7.2 %` (Ref: `< 5.7 %`) `[HIGH]` |
+| **Doctor Advice & Lifestyle** | Dietary constraints, bed rest, followup directives | `Take bed rest; avoid high sodium; review in 7 days` |
 
 ---
 
