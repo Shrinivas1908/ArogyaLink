@@ -7,24 +7,13 @@ export default function Header() {
         
         {/* Brand Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <svg
-              className="w-6 h-6 text-white shrink-0"
-              width="24"
-              height="24"
-              style={{ width: '24px', height: '24px', maxWidth: '24px', maxHeight: '24px' }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
+          <img
+            src="/logo.jpg"
+            alt="ArogyaLink Logo"
+            className="h-12 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"
+          />
           <div>
-            <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-sky-900 to-sky-600 bg-clip-text text-transparent">
-              ArogyaLink
-            </span>
-            <span className="block text-[10px] uppercase font-bold tracking-widest text-sky-600">
+            <span className="block text-[10px] uppercase font-bold tracking-widest text-sky-700">
               Patient Intake Kiosk
             </span>
           </div>

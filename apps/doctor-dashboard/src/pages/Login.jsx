@@ -43,15 +43,12 @@ export default function Login() {
 
       <div className="glass-card rounded-3xl p-8 sm:p-10 w-full max-w-md space-y-6 relative z-10 border border-sky-200 shadow-xl">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-400 to-sky-600 flex items-center justify-center mx-auto shadow-md shadow-sky-500/20">
-            <svg
-              className="w-7 h-7 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
+          <div className="flex justify-center mb-2">
+            <img
+              src="/logo.jpg"
+              alt="ArogyaLink Logo"
+              className="h-16 w-auto object-contain drop-shadow-md"
+            />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Clinical Staff Sign In</h1>
           <p className="text-slate-500 text-xs font-semibold">ArogyaLink · Doctor & Reviewer Portal</p>
