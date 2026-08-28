@@ -149,22 +149,6 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     }
   }
 
-  // ── Translate option label ─────────────────────────────────────────────
-  const translateOption = (opt) => tOpt(opt.value, lang, opt.label)
-
-  // ── Translate question text ────────────────────────────────────────────
-  const translateQuestion = (q) => tQuestion(q.id, lang, q.text)
-
-  // ── Loading state ──────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="w-full bg-white rounded-3xl border border-sky-200 p-8 text-center space-y-3 shadow-md">
-        <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-slate-500 text-sm font-semibold">{t('loading_question', lang)}</p>
-      </div>
-    )
-  }
-
   // ── Summary & Verification state ───────────────────────────────────────
   const [summaryData, setSummaryData] = useState(null)
   const [triageData, setTriageData] = useState(null)
@@ -173,17 +157,15 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
   const [isVerified, setIsVerified] = useState(false)
   const [confirmedSubmitted, setConfirmedSubmitted] = useState(false)
 
-  // When intake finishes, load full summary, triage evaluation & AI clinical synthesis
-  useEffect(() => {
-    if (isComplete && encounterId) {
-      loadEncounterSummary()
-    }
-  }, [isComplete, encounterId])
+  // ── Translate option label ─────────────────────────────────────────────
+  const translateOption = (opt) => tOpt(opt.value, lang, opt.label)
+
+  // ── Translate question text ────────────────────────────────────────────
+  const translateQuestion = (q) => tQuestion(q.id, lang, q.text)
 
   const loadEncounterSummary = async () => {
     setSummaryLoading(true)
     try {
-      // 1. Evaluate triage and red flags
       const triageRes = await fetch('/api/triage/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -194,14 +176,12 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         setTriageData(tData)
       }
 
-      // 2. Fetch answers list
       const ansRes = await fetch(`/api/intake/answers/${encounterId}`)
       if (ansRes.ok) {
         const aData = await ansRes.json()
         setAnswersList(aData.answers || {})
       }
 
-      // 3. Fetch Gemini AI clinical synthesis
       const sumRes = await fetch('/api/summary/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,6 +196,23 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     } finally {
       setSummaryLoading(false)
     }
+  }
+
+  // When intake finishes, load full summary
+  useEffect(() => {
+    if (isComplete && encounterId) {
+      loadEncounterSummary()
+    }
+  }, [isComplete, encounterId])
+
+  // ── Loading state ──────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-8 text-center space-y-3 shadow-md">
+        <div className="w-8 h-8 border-4 border-[#12322B] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-[#5F7D74] text-sm font-semibold">{t('loading_question', lang)}</p>
+      </div>
+    )
   }
 
   const handleConfirmSubmit = () => {
@@ -428,23 +425,23 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
   if (!currentQuestion) return null
 
   return (
-    <div className="w-full bg-white rounded-3xl border border-sky-200 p-6 sm:p-8 space-y-6 shadow-lg">
+    <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-6 sm:p-8 space-y-6 shadow-xl">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl text-center font-semibold">
+        <div className="p-3 bg-[#FDF0ED] border border-[#FADCD5] text-[#8F2A24] text-xs rounded-xl text-center font-semibold">
           {error}
         </div>
       )}
 
       {/* Header: Category + Language label + Voice Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider px-3.5 py-1 bg-sky-100 text-sky-800 rounded-full border border-sky-200">
+        <span className="text-xs font-bold uppercase tracking-wider px-3.5 py-1 bg-[#FAF7F2] text-[#12322B] rounded-full border border-[#E4EDE9]">
           {currentQuestion.category?.replace(/_/g, ' ') || 'Intake Question'}
         </span>
 
         {/* Voice Bar */}
-        <div className="flex items-center gap-2 p-1.5 bg-sky-50 border border-sky-200 rounded-2xl">
+        <div className="flex items-center gap-2 p-1.5 bg-[#FAF7F2] border border-[#E4EDE9] rounded-2xl">
           {/* Current language badge */}
-          <span className="text-xs font-bold px-2.5 py-1 bg-white border border-sky-200 text-sky-900 rounded-xl">
+          <span className="text-xs font-bold px-2.5 py-1 bg-white border border-[#E4EDE9] text-[#12322B] rounded-xl">
             {langObj.flag} {langObj.nativeName}
           </span>
 
@@ -456,7 +453,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
               isListening
                 ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30'
                 : isSupported
-                ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm'
+                ? 'bg-[#12322B] hover:bg-[#1C453C] text-white shadow-sm'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
@@ -470,8 +467,8 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         <div
           className={`p-3 text-xs font-semibold rounded-xl border ${
             voiceError
-              ? 'bg-red-50 border-red-200 text-red-700'
-              : 'bg-sky-50 border-sky-200 text-sky-900'
+              ? 'bg-[#FDF0ED] border-[#FADCD5] text-[#8F2A24]'
+              : 'bg-[#FAF7F2] border-[#E4EDE9] text-[#12322B]'
           }`}
         >
           {voiceError || voiceStatus}
@@ -486,7 +483,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
       )}
 
       {/* Question text (translated) */}
-      <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+      <h3 className="text-xl sm:text-2xl font-serif text-[#12322B] leading-snug">
         {translateQuestion(currentQuestion)}
       </h3>
 
@@ -498,10 +495,10 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
               key={opt.value}
               disabled={submitting}
               onClick={() => handleSubmitAnswer(opt.value)}
-              className="w-full p-4 rounded-2xl border-2 border-sky-100 bg-sky-50/30 hover:border-sky-500 hover:bg-sky-50 text-left font-semibold text-slate-800 transition flex items-center justify-between group disabled:opacity-50 shadow-sm"
+              className="w-full p-4 rounded-2xl border border-[#E4EDE9] bg-[#FAF7F2]/50 hover:border-[#12322B] hover:bg-[#FAF7F2] text-left font-semibold text-[#12322B] transition flex items-center justify-between group disabled:opacity-50 shadow-sm"
             >
               <span>{translateOption(opt)}</span>
-              <span className="text-sky-500 font-bold group-hover:translate-x-1 transition-transform">→</span>
+              <span className="text-[#12322B] font-bold group-hover:translate-x-1 transition-transform">→</span>
             </button>
           ))}
         </div>
@@ -518,16 +515,16 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
                   key={opt.value}
                   type="button"
                   onClick={() => toggleMultiSelect(opt.value)}
-                  className={`p-4 rounded-2xl border-2 text-left font-semibold transition flex items-center justify-between ${
+                  className={`p-4 rounded-2xl border text-left font-semibold transition flex items-center justify-between ${
                     isSelected
-                      ? 'border-sky-500 bg-sky-50 text-sky-900 shadow-sm'
-                      : 'border-sky-100 bg-white hover:border-sky-200 text-slate-700'
+                      ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B] shadow-sm'
+                      : 'border-[#E4EDE9] bg-white hover:border-[#BFD8D2] text-[#5F7D74]'
                   }`}
                 >
                   <span className="text-sm">{translateOption(opt)}</span>
                   <span
                     className={`w-5 h-5 rounded-lg border flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                      isSelected ? 'bg-sky-500 border-sky-500 text-white' : 'border-sky-300'
+                      isSelected ? 'bg-[#12322B] border-[#12322B] text-white' : 'border-[#BFD8D2]'
                     }`}
                   >
                     {isSelected ? '✓' : ''}
@@ -541,7 +538,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
             id="multi-select-submit"
             disabled={submitting || selectedMulti.length === 0}
             onClick={() => handleSubmitAnswer(selectedMulti)}
-            className="w-full py-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-base shadow-lg shadow-sky-500/25 transition disabled:opacity-50"
+            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
           >
             {submitting ? t('saving_answer', lang) : t('submit_continue', lang)}
           </button>
@@ -554,7 +551,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
           <textarea
             rows={3}
             id="text-answer-input"
-            className="w-full p-4 border border-sky-200 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none text-slate-800 bg-white font-medium text-base resize-none"
+            className="w-full p-4 border border-[#E4EDE9] rounded-2xl focus:border-[#12322B] outline-none text-[#12322B] bg-[#FAF7F2] font-medium text-base resize-none"
             placeholder={t('type_or_voice', lang)}
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
@@ -564,7 +561,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
             id="text-submit-btn"
             disabled={submitting || !textInput.trim()}
             onClick={() => handleSubmitAnswer(textInput.trim())}
-            className="w-full py-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-base shadow-lg shadow-sky-500/25 transition disabled:opacity-50"
+            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
           >
             {submitting ? t('saving_answer', lang) : t('submit_response', lang)}
           </button>

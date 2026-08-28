@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # ── AI / Integrations (Phase 8+) ─────────────────────────────────
     gemini_api_key: str = ""
+    groq_api_key: str = ""
     bhashini_api_key: str = ""
     bhashini_user_id: str = ""
     openai_api_key: str = ""
