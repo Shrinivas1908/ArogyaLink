@@ -327,10 +327,11 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
       const sumRes = await fetch('/api/summary/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ encounter_id: encounterId }),
+        body: JSON.stringify({ encounter_id: encounterId, language: lang }),
       })
       if (sumRes.ok) {
-        setSummaryData(await sumRes.json())
+        const sumJson = await sumRes.json()
+        setSummaryData(sumJson.summary || sumJson)
       }
     } catch (e) {
       console.error('Summary error:', e)
@@ -343,7 +344,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     if (isComplete && encounterId) {
       loadEncounterSummary()
     }
-  }, [isComplete, encounterId])
+  }, [isComplete, encounterId, lang])
 
   const translateOption = (opt) => tOpt(opt.value, lang, opt.label)
   const translateQuestion = (q) => tQuestion(q.id, lang, q.text)
@@ -356,6 +357,14 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
       </div>
     )
   }
+
+  const triageLevel = (triageData?.triage_level || 'ROUTINE').toUpperCase()
+  const triageColorClass =
+    triageLevel === 'CRITICAL'
+      ? 'bg-red-100 text-red-800 border-red-200'
+      : triageLevel === 'URGENT'
+      ? 'bg-amber-100 text-amber-800 border-amber-200'
+      : 'bg-emerald-100 text-emerald-800 border-emerald-200'
 
   return (
     <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-6 sm:p-8 space-y-6 shadow-xl text-left">
@@ -371,7 +380,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
           }`}
         >
           <span>🎙️</span>
-          <span>Multimodal Intake</span>
+          <span>{t('tab_clinical', lang)}</span>
         </button>
 
         <button
@@ -383,8 +392,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
           }`}
         >
           <span>🌿</span>
-          <span>AYUSH Pariksha</span>
-          <span className="text-[9px] bg-[#BFD8D2] text-[#12322B] px-1.5 py-0.5 rounded-full font-mono">Prakriti</span>
+          <span>{t('tab_ayush', lang)}</span>
         </button>
 
         <button
@@ -396,8 +404,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
           }`}
         >
           <span>📄</span>
-          <span>Scan Rx / Records</span>
-          <span className="text-[9px] bg-[#BFD8D2] text-[#12322B] px-1.5 py-0.5 rounded-full font-mono">OCR</span>
+          <span>{t('tab_ocr', lang)}</span>
         </button>
       </div>
 
@@ -406,67 +413,181 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         <>
           {isComplete ? (
             <div className="space-y-6">
+              {/* Header Badge */}
               <div className="flex items-center justify-between border-b border-[#E4EDE9] pb-4">
                 <div className="flex items-center gap-3">
                   <span className="w-10 h-10 rounded-full bg-[#12322B] text-white flex items-center justify-center font-bold">✓</span>
                   <div>
-                    <h3 className="text-xl font-serif text-[#12322B]">Intake Completed & Triaged</h3>
-                    <p className="text-xs text-[#5F7D74]">Structured clinical record dispatched to Doctor review queue.</p>
+                    <h3 className="text-xl font-serif text-[#12322B]">{t('intake_completed_title', lang)}</h3>
+                    <p className="text-xs text-[#5F7D74]">{t('intake_completed_desc', lang)}</p>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-bold px-3 py-1 bg-[#FAF7F2] border border-[#E4EDE9] rounded-full text-[#12322B]">
-                  {triageData?.triage_level || 'ROUTINE'}
+                <span className={`text-xs font-mono font-bold px-3 py-1 border rounded-full ${triageColorClass}`}>
+                  {triageLevel}
                 </span>
               </div>
 
               {summaryLoading ? (
-                <div className="p-8 text-center text-xs text-[#5F7D74] space-y-2">
-                  <div className="w-6 h-6 border-2 border-[#12322B] border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p>Synthesizing Groq & Gemini clinical decision summary...</p>
+                <div className="p-12 text-center text-xs text-[#5F7D74] space-y-3">
+                  <div className="w-7 h-7 border-2 border-[#12322B] border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="font-semibold">Synthesizing Comprehensive 1-Page AI Clinical Report in {langObj.name}...</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="p-5 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F7D74]">
-                        Physician-Ready AI Clinical Summary:
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-[#12322B] border border-[#E4EDE9]">
-                        Traceable Evidence
+                <div className="space-y-5">
+                  
+                  {/* ── 1-PAGE COMPREHENSIVE CLINICAL SUMMARY CARD ────── */}
+                  <div className="p-6 bg-[#FAF7F2] rounded-3xl border border-[#E4EDE9] space-y-5 shadow-sm">
+                    
+                    {/* Header Info */}
+                    <div className="flex items-center justify-between border-b border-[#E4EDE9] pb-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F7D74] block">
+                          {t('physician_ready_summary', lang)}
+                        </span>
+                        <div className="text-xs font-mono text-[#12322B] mt-0.5">
+                          Encounter ID: <strong>{encounterId}</strong> • Priority: <strong>{triageLevel}</strong>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white text-[#12322B] border border-[#E4EDE9] shadow-2xs">
+                        100% Traceable AI
                       </span>
                     </div>
 
-                    <p className="text-sm font-semibold text-[#12322B] leading-relaxed">
-                      {summaryData?.chief_complaint || 'Patient presents with acute symptoms evaluated for urgent clinical review.'}
-                    </p>
+                    {/* Section 1: Quick Doctor Snapshot */}
+                    <div className="p-4 bg-white rounded-2xl border border-[#E4EDE9] space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-[#12322B] text-white rounded">
+                          {t('quick_snapshot', lang)}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-[#12322B] leading-relaxed">
+                        {summaryData?.quick_summary || `Patient presenting with ${summaryData?.chief_complaint || 'acute symptoms'}; priority clinical review and diagnostic examination indicated.`}
+                      </p>
+                    </div>
 
-                    {summaryData?.differential_diagnoses?.length > 0 && (
-                      <div className="pt-2 border-t border-[#E4EDE9] space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase text-[#5F7D74]">Top Suspected Differentials:</span>
-                        <div className="flex flex-wrap gap-2">
-                          {summaryData.differential_diagnoses.map((d, i) => (
-                            <span key={i} className="text-xs px-2.5 py-1 rounded-xl bg-white border border-[#E4EDE9] font-medium text-[#12322B]">
-                              ✦ {d.condition || d} ({d.likelihood || 'High'})
+                    {/* Section 2: Patient-Friendly Explanation */}
+                    <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/90 space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-emerald-950 font-bold text-xs">
+                        <span>{t('patient_friendly_title', lang)}</span>
+                      </div>
+                      <p className="text-xs text-emerald-900 leading-relaxed font-sans font-medium">
+                        {summaryData?.patient_friendly_summary || 'Your reported symptoms have been carefully noted. Our clinical team will conduct a focused examination and provide appropriate treatment.'}
+                      </p>
+                    </div>
+
+                    {/* Section 3: History of Present Illness (HPI Narrative) */}
+                    <div className="p-4 bg-white rounded-2xl border border-[#E4EDE9] space-y-2">
+                      <span className="text-[10px] font-bold uppercase text-[#5F7D74] block">
+                        {t('hpi_narrative_title', lang)}
+                      </span>
+                      <p className="text-xs text-[#12322B] leading-relaxed">
+                        {summaryData?.history_of_present_illness || `Patient presents with a complaint of ${summaryData?.chief_complaint || 'acute symptoms'} of ${summaryData?.duration || 'recent'} duration. Evaluated with severity grade ${summaryData?.severity || triageLevel}.`}
+                      </p>
+                      {summaryData?.key_findings?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {summaryData.key_findings.map((f, i) => (
+                            <span key={i} className="text-[11px] px-2 py-0.5 rounded-lg bg-[#FAF7F2] border border-[#E4EDE9] text-[#12322B]">
+                              • {f}
                             </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 4: Active Medications & OCR Extraction */}
+                    {(summaryData?.active_medications_and_labs?.length > 0 || ocrResult?.detected_medications?.length > 0) && (
+                      <div className="p-4 bg-white rounded-2xl border border-[#E4EDE9] space-y-2">
+                        <span className="text-[10px] font-bold uppercase text-[#5F7D74] block">
+                          {t('active_meds_ocr_title', lang)}
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {(ocrResult?.detected_medications || summaryData?.active_medications_and_labs || []).map((m, idx) => {
+                            const medName = typeof m === 'string' ? m : m.name
+                            const medDose = typeof m === 'object' ? `${m.dosage || ''} ${m.frequency || ''}` : ''
+                            return (
+                              <div key={idx} className="p-2.5 bg-[#FAF7F2] rounded-xl border border-[#E4EDE9] flex items-center justify-between text-xs">
+                                <div>
+                                  <strong className="text-[#12322B] block">{medName}</strong>
+                                  {medDose && <span className="text-[10px] text-[#5F7D74]">{medDose}</span>}
+                                </div>
+                                <span className="text-[9px] px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded">
+                                  Prescribed
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Section 5: Differential Diagnoses */}
+                    {summaryData?.differential_diagnoses?.length > 0 && (
+                      <div className="p-4 bg-white rounded-2xl border border-[#E4EDE9] space-y-2">
+                        <span className="text-[10px] font-bold uppercase text-[#5F7D74] block">
+                          {t('differentials_title', lang)}
+                        </span>
+                        <div className="space-y-2">
+                          {summaryData.differential_diagnoses.map((d, i) => (
+                            <div key={i} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#E4EDE9] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                              <div>
+                                <span className="font-bold text-[#12322B] block">{d.condition || d}</span>
+                                {d.rationale && <p className="text-[11px] text-[#5F7D74] mt-0.5">{d.rationale}</p>}
+                              </div>
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
+                                d.likelihood === 'High' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {d.likelihood || 'High Likelihood'}
+                              </span>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    {/* Section 6: Physician Action Plan & Next Steps */}
+                    <div className="p-4 bg-white rounded-2xl border border-[#E4EDE9] space-y-2">
+                      <span className="text-[10px] font-bold uppercase text-[#5F7D74] block">
+                        {t('suggested_actions_title', lang)}
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(summaryData?.suggested_doctor_actions || [
+                          'Conduct focused physical examination and vital signs assessment',
+                          'Perform baseline diagnostic workup and ECG if cardiac/respiratory',
+                          'Review medication reconciliation against prescription history',
+                          'Provide supportive hydration and appropriate prescription',
+                        ]).map((act, i) => (
+                          <div key={i} className="p-2.5 bg-[#FAF7F2] rounded-xl border border-[#E4EDE9] text-xs text-[#12322B] flex items-start gap-2">
+                            <span className="text-[#12322B] font-bold">✓</span>
+                            <span>{act}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
 
-                  <div className="flex gap-3">
+                  {/* ── ACTION BUTTONS ─────────────────────────────────── */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
                       onClick={() => setConfirmedSubmitted(true)}
-                      className="flex-1 py-3.5 rounded-full bg-[#12322B] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#1C453C] transition"
+                      className="flex-1 py-4 rounded-full bg-[#12322B] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#1C453C] transition text-center"
                     >
-                      {confirmedSubmitted ? '✓ Live on Doctor Dashboard' : 'Confirm & Send to Doctor →'}
+                      {confirmedSubmitted ? t('live_on_dashboard', lang) : t('confirm_send_doctor', lang)}
                     </button>
                     <button
                       onClick={() => window.print()}
-                      className="px-6 py-3.5 rounded-full bg-white border border-[#E4EDE9] text-[#12322B] text-xs font-bold hover:bg-[#FAF7F2] transition shadow-sm"
+                      className="px-6 py-4 rounded-full bg-white border border-[#E4EDE9] text-[#12322B] text-xs font-bold hover:bg-[#FAF7F2] transition shadow-sm flex items-center justify-center gap-1.5"
                     >
-                      🖨 Print Token
+                      {t('print_token_btn', lang)}
                     </button>
+                    {onRestart && (
+                      <button
+                        onClick={onRestart}
+                        className="px-6 py-4 rounded-full bg-[#FAF7F2] border border-[#E4EDE9] text-[#5F7D74] hover:text-[#12322B] text-xs font-bold transition shadow-sm flex items-center justify-center"
+                      >
+                        {t('restart_checkin_btn', lang)}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -341,12 +341,12 @@ export default function InteractiveDoctorWorkspace() {
                 </div>
               </div>
 
-              {/* Gemini AI Clinical Summary */}
+              {/* Gemini AI Clinical Summary (1-Page Comprehensive Review) */}
               {selectedEncounter.gemini_summary && (
-                <div className="p-5 rounded-2xl bg-sky-50/70 border border-sky-200 space-y-3">
+                <div className="p-5 rounded-2xl bg-sky-50/70 border border-sky-200 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold uppercase tracking-wider text-sky-800">
-                      Gemini AI Clinical Synthesis
+                      Gemini AI Clinical Synthesis (1-Page Comprehensive Report)
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 bg-sky-200 text-sky-900 rounded-md">
                       Pydantic Verified
@@ -369,31 +369,81 @@ export default function InteractiveDoctorWorkspace() {
                   {selectedEncounter.gemini_summary.patient_friendly_summary && (
                     <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200">
                       <span className="text-[10px] font-extrabold uppercase text-emerald-900 block mb-0.5">
-                        🗣️ Patient-Friendly Explanation:
+                        🗣️ Patient-Friendly Care Explanation:
                       </span>
-                      <p className="text-xs text-emerald-800">
+                      <p className="text-xs text-emerald-800 font-medium leading-relaxed">
                         {selectedEncounter.gemini_summary.patient_friendly_summary}
                       </p>
                     </div>
                   )}
 
-                  <p className="text-sm font-bold text-slate-900">
-                    {selectedEncounter.gemini_summary.chief_complaint}
-                  </p>
-
-                  <div className="space-y-1 text-xs text-slate-700">
-                    <p><strong>Duration:</strong> {selectedEncounter.gemini_summary.duration}</p>
-                    <p><strong>Severity:</strong> {selectedEncounter.gemini_summary.severity}</p>
+                  {/* History of Present Illness */}
+                  <div className="p-3.5 bg-white rounded-xl border border-sky-200 space-y-1.5 text-xs text-slate-700">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      📋 History of Present Illness (HPI Narrative):
+                    </span>
+                    <p className="text-slate-900 font-medium">
+                      {selectedEncounter.gemini_summary.history_of_present_illness || selectedEncounter.gemini_summary.chief_complaint}
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <span className="px-2 py-0.5 bg-slate-100 rounded text-[11px]">
+                        <strong>Duration:</strong> {selectedEncounter.gemini_summary.duration}
+                      </span>
+                      <span className="px-2 py-0.5 bg-slate-100 rounded text-[11px]">
+                        <strong>Severity:</strong> {selectedEncounter.gemini_summary.severity}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Key Intake Findings */}
                   {selectedEncounter.gemini_summary.key_findings?.length > 0 && (
-                    <div className="pt-2">
-                      <span className="text-xs font-bold text-slate-800 block mb-1">Key Intake Findings:</span>
-                      <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+                    <div className="p-3.5 bg-white rounded-xl border border-sky-200 space-y-1 text-xs">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">Key Clinical Findings:</span>
+                      <div className="flex flex-wrap gap-1.5">
                         {selectedEncounter.gemini_summary.key_findings.map((f, i) => (
-                          <li key={i}>{f}</li>
+                          <span key={i} className="px-2 py-0.5 rounded bg-sky-50 text-sky-900 font-medium text-[11px] border border-sky-100">
+                            • {f}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Differential Diagnoses Table */}
+                  {selectedEncounter.gemini_summary.differential_diagnoses?.length > 0 && (
+                    <div className="p-3.5 bg-white rounded-xl border border-sky-200 space-y-2 text-xs">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        🩺 Suspected Differential Diagnoses:
+                      </span>
+                      <div className="space-y-1.5">
+                        {selectedEncounter.gemini_summary.differential_diagnoses.map((d, i) => (
+                          <div key={i} className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                            <div>
+                              <strong className="text-slate-900">{d.condition}</strong>
+                              <p className="text-[11px] text-slate-500 mt-0.5">{d.rationale}</p>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                              d.likelihood === 'High' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {d.likelihood}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommended Investigations */}
+                  {selectedEncounter.gemini_summary.recommended_vitals_and_labs?.length > 0 && (
+                    <div className="p-3.5 bg-white rounded-xl border border-sky-200 space-y-1 text-xs">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">Recommended Investigations & Labs:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedEncounter.gemini_summary.recommended_vitals_and_labs.map((lab, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded bg-amber-50 text-amber-900 font-medium text-[11px] border border-amber-200">
+                            ✦ {lab}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

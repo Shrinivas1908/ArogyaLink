@@ -26,6 +26,7 @@ class LLMService:
         answers: dict[str, Any],
         ocr_text: str | None = None,
         ocr_medications: list[dict[str, Any]] | None = None,
+        language: str = "en",
     ) -> dict[str, Any]:
         """Generate clinical summary with OCR text linkage and contradiction analysis."""
         # Check if OCR result is cached for this encounter
@@ -39,6 +40,7 @@ class LLMService:
             intake_answers=answers,
             ocr_text=ocr_text,
             ocr_medications=ocr_medications,
+            language=language,
         )
         contradictions = self.contradiction_engine.check_contradictions(answers, ocr_text=ocr_text)
 

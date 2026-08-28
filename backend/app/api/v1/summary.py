@@ -23,6 +23,7 @@ llm_service = LLMService()
 
 class GenerateSummaryRequest(BaseModel):
     encounter_id: str
+    language: str = "en"
 
 
 @router.post("/generate")
@@ -33,17 +34,18 @@ async def generate_summary(
     """Generate Gemini 2.5 Flash clinical summary for encounter."""
     await validate_consented_encounter(body.encounter_id, db)
     answers = await q_engine.get_answers_dict(body.encounter_id, db)
-    result = llm_service.generate_encounter_summary(body.encounter_id, answers)
+    result = llm_service.generate_encounter_summary(body.encounter_id, answers, language=body.language)
     return result
 
 
 @router.get("/encounter/{encounter_id}")
 async def get_summary(
     encounter_id: str,
+    language: str = "en",
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Retrieve synthesized summary for an encounter."""
     await validate_consented_encounter(encounter_id, db)
     answers = await q_engine.get_answers_dict(encounter_id, db)
-    result = llm_service.generate_encounter_summary(encounter_id, answers)
+    result = llm_service.generate_encounter_summary(encounter_id, answers, language=language)
     return result

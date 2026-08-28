@@ -78,6 +78,7 @@ class GeminiClient:
         intake_answers: dict[str, Any],
         ocr_text: str | None = None,
         ocr_medications: list[dict[str, Any]] | None = None,
+        language: str = "en",
     ) -> dict[str, Any]:
         """Generate high-precision structured clinical summary optimized for easy human understanding."""
         complaint = intake_answers.get("q_chief_complaint", ["General discomfort"])
@@ -96,6 +97,24 @@ class GeminiClient:
             med_names = [f"{m.get('name')} {m.get('dosage', '')} ({m.get('frequency', '')})" for m in ocr_medications]
             ocr_context += f"\n- Extracted Active Medications from Rx: {', '.join(med_names)}"
 
+        lang_name = {
+            "hi": "Hindi (हिंदी)",
+            "bn": "Bengali (বাংলা)",
+            "ta": "Tamil (தமிழ்)",
+            "te": "Telugu (తెలుగు)",
+            "mr": "Marathi (मराठी)",
+            "gu": "Gujarati (ગુજરાતી)",
+            "kn": "Kannada (ಕನ್ನಡ)",
+        }.get(language.lower(), "English")
+
+        lang_instruction = ""
+        if language.lower() != "en":
+            lang_instruction = (
+                f"\nIMPORTANT: The patient's chosen language is {lang_name}.\n"
+                f"Please write the 'patient_friendly_summary' in fluent, clear, and reassuring {lang_name}.\n"
+                f"For 'quick_summary', provide the concise English medical snapshot followed by a 1-sentence {lang_name} translation."
+            )
+
         # 1. Primary: Google Gemini Flash (3.6 / 3.7 / flash-latest)
         if self.gemini_api_key and self.gemini_api_key.strip():
             prompt_text = (
@@ -105,7 +124,8 @@ class GeminiClient:
                 f"- Duration: {duration}\n"
                 f"- Severity: {severity}\n"
                 f"- Intake Answers: {json.dumps(intake_answers)}\n"
-                f"{ocr_context}\n\n"
+                f"{ocr_context}\n"
+                f"{lang_instruction}\n\n"
                 f"Required JSON keys:\n"
                 f"- quick_summary (1-2 sentence high-yield snapshot for doctor at a glance)\n"
                 f"- patient_friendly_summary (simple, reassuring explanation in plain language for patient/family)\n"
