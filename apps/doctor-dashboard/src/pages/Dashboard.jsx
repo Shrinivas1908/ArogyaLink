@@ -73,10 +73,10 @@ export default function Dashboard() {
   const fetchQueue = async () => {
     try {
       const token = user?.access_token || localStorage.getItem('supabase_token')
+      const url = token ? '/api/queue/encounters' : '/api/queue/encounters/portal'
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-      let res = await fetch('/api/queue/encounters', { headers })
-      if (!res.ok) res = await fetch('/api/queue/encounters/portal')
+      const res = await fetch(url, { headers })
       if (res.ok) {
         const data = await res.json()
         const fetched = Array.isArray(data) ? data : data.encounters || []
@@ -122,10 +122,10 @@ export default function Dashboard() {
   const handleSelectEncounter = async (encId) => {
     try {
       const token = user?.access_token || localStorage.getItem('supabase_token')
+      const url = token ? `/api/queue/encounter/${encId}` : `/api/queue/encounter/${encId}/portal`
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-      let res = await fetch(`/api/queue/encounter/${encId}`, { headers })
-      if (!res.ok) res = await fetch(`/api/queue/encounter/${encId}/portal`)
+      const res = await fetch(url, { headers })
       if (res.ok) {
         const data = await res.json()
         setSelectedEncounter({ ...data, encounter_id: data.encounter_id || encId })
