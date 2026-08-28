@@ -28,6 +28,7 @@ from app.api.v1 import fhir as fhir_router
 from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
 from app.api.v1 import ocr as ocr_router
+from app.api.v1 import phone_auth as phone_auth_router
 from app.api.v1 import offline_sync as offline_sync_router
 from app.api.v1 import reminders as reminders_router
 from app.api.v1 import session as session_router
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(doctor_queue_router.router)
     app.include_router(ws_router.router)
     app.include_router(ocr_router.router)
+    app.include_router(phone_auth_router.router)
     app.include_router(voice_router.router)
     app.include_router(summary_router.router)
     app.include_router(audit_router.router)

@@ -35,16 +35,19 @@ def upgrade() -> None:
     op.execute("""
         DO $$
         BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'authenticated_staff_read') THEN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') AND
+               EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth') THEN
+              IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'authenticated_staff_read') THEN
                 CREATE POLICY "authenticated_staff_read" ON public.staff_profiles
                     FOR SELECT TO authenticated
                     USING ((SELECT auth.uid()) IS NOT NULL);
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'staff_manage_own_profile') THEN
+              END IF;
+              IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'staff_manage_own_profile') THEN
                 CREATE POLICY "staff_manage_own_profile" ON public.staff_profiles
                     FOR ALL TO authenticated
                     USING ((SELECT auth.uid()) = id)
                     WITH CHECK ((SELECT auth.uid()) = id);
+              END IF;
             END IF;
         END $$;
     """)
@@ -55,11 +58,13 @@ def upgrade() -> None:
         op.execute(f"""
             DO $$
             BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = '{table}' AND policyname = '{policy_name}') THEN
+                IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = '{table}' AND policyname = '{policy_name}') THEN
                     CREATE POLICY "{policy_name}" ON public.{table}
                         FOR ALL TO authenticated
                         USING ((SELECT auth.uid()) IS NOT NULL)
                         WITH CHECK ((SELECT auth.uid()) IS NOT NULL);
+                  END IF;
                 END IF;
             END $$;
         """)
@@ -70,7 +75,8 @@ def upgrade() -> None:
         BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'alembic_version') THEN
                 EXECUTE 'ALTER TABLE public.alembic_version ENABLE ROW LEVEL SECURITY;';
-                IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'alembic_version' AND policyname = 'alembic_version_internal_only') THEN
+                IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') AND
+                   NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'alembic_version' AND policyname = 'alembic_version_internal_only') THEN
                     EXECUTE 'CREATE POLICY "alembic_version_internal_only" ON public.alembic_version FOR ALL TO authenticated USING (false);';
                 END IF;
             END IF;

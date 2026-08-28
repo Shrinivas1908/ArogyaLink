@@ -6,6 +6,16 @@ import ConsentStep from '../components/ConsentStep'
 import IntakeQuestionnaire from '../components/IntakeQuestionnaire'
 import { LANGUAGES, t } from '../lib/i18n'
 
+async function parseApiResponse(response) {
+  const text = await response.text()
+  if (!text) return {}
+  try {
+    return JSON.parse(text)
+  } catch {
+    return {}
+  }
+}
+
 export default function Home() {
   const [step, setStep] = useState('landing') // 'landing' | 'demographics' | 'consent' | 'active'
   const [loading, setLoading] = useState(false)
@@ -19,6 +29,8 @@ export default function Home() {
   const [loginMode, setLoginMode] = useState('abha')
   const [abhaInput, setAbhaInput] = useState('91-4820-9182-3491')
   const [abhaPin, setAbhaPin] = useState('1234')
+  const [otp, setOtp] = useState('')
+  const [otpChallengeId, setOtpChallengeId] = useState(null)
   const [formData, setFormData] = useState({ fullName: '', age: '', gender: 'Male', phone: '' })
 
   // Session state
@@ -83,6 +95,56 @@ export default function Home() {
         gender: formData.gender,
       })
       setStep('consent')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRequestPhoneOtp = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/phone/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone.trim() }),
+      })
+      const data = await parseApiResponse(res)
+      if (!res.ok) {
+        throw new Error(data.message || 'The verification service is unavailable. Please try again.')
+      }
+      setOtpChallengeId(data.challenge_id)
+    } catch (err) {
+      setError(err.message === 'Failed to fetch' ? 'Unable to reach the verification service. Please try again.' : err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyPhoneOtp = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/auth/phone/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: formData.phone.trim(),
+          challenge_id: otpChallengeId,
+          otp,
+          kiosk_id: 'kiosk-01',
+        }),
+      })
+      const data = await parseApiResponse(res)
+      if (!res.ok) throw new Error(data.message || 'The verification service is unavailable. Please try again.')
+      setSession(data)
+      setStep('consent')
+      setOtp('')
+      setOtpChallengeId(null)
+    } catch (err) {
+      setError(err.message === 'Failed to fetch' ? 'Unable to reach the verification service. Please try again.' : err.message)
     } finally {
       setLoading(false)
     }
@@ -154,6 +216,11 @@ export default function Home() {
             formData={formData}
             setFormData={setFormData}
             onCreateSession={handleCreateSession}
+            otp={otp}
+            setOtp={setOtp}
+            otpChallengeId={otpChallengeId}
+            onRequestPhoneOtp={handleRequestPhoneOtp}
+            onVerifyPhoneOtp={handleVerifyPhoneOtp}
           />
         )}
 
