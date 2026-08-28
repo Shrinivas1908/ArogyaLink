@@ -66,6 +66,24 @@ async def list_doctor_queue(
     current_doctor: Any = Depends(require_doctor),
 ) -> list[dict[str, Any]]:
     """Retrieve active patient queue sorted by triage severity (CRITICAL -> URGENT -> ROUTINE)."""
+    return await _build_queue(db, triage_level, status_filter)
+
+
+@router.get("/encounters/portal", response_model=list[EncounterQueueItem])
+async def list_portal_queue(
+    triage_level: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
+    """Public portal demo queue — no auth required. Used by the unified portal workspace."""
+    return await _build_queue(db, triage_level, status_filter)
+
+
+async def _build_queue(
+    db: AsyncSession,
+    triage_level: str | None = None,
+    status_filter: str | None = None,
+) -> list[dict[str, Any]]:
     stmt = select(Encounter).options(selectinload(Encounter.patient)).order_by(Encounter.created_at.desc())
 
     if status_filter:
@@ -77,7 +95,6 @@ async def list_doctor_queue(
     res = await db.execute(stmt)
     encounters = res.scalars().all()
 
-    # Sort priority: CRITICAL (0) -> URGENT (1) -> ROUTINE (2)
     priority_map = {"CRITICAL": 0, "URGENT": 1, "ROUTINE": 2}
     sorted_encounters = sorted(encounters, key=lambda e: (priority_map.get(e.triage_level, 3), e.created_at))
 
@@ -104,6 +121,19 @@ async def get_clinical_bundle(
     current_doctor: Any = Depends(require_doctor),
 ) -> dict[str, Any]:
     """Retrieve full clinical bundle (demographics, consent, answers, triage) for an encounter."""
+    return await _build_encounter_bundle(encounter_id, db)
+
+
+@router.get("/encounter/{encounter_id}/portal", response_model=ClinicalReviewBundle)
+async def get_portal_encounter_bundle(
+    encounter_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Public portal encounter bundle — no auth required. Used by unified portal workspace."""
+    return await _build_encounter_bundle(encounter_id, db)
+
+
+async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[str, Any]:
     try:
         enc_uuid = uuid.UUID(encounter_id)
     except ValueError:

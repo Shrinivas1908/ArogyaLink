@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://arogya:arogya_pass@localhost:5432/arogya_link"
 
     # ── CORS ─────────────────────────────────────────────────────────
-    cors_origins: str = "http://localhost:5173,http://localhost:5174"
+    cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175"
 
     @property
     def cors_origins_list(self) -> list[str]:

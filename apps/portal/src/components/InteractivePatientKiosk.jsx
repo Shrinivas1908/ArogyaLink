@@ -1,4 +1,3 @@
-2
 import React, { useState, useEffect } from 'react'
 
 export default function InteractivePatientKiosk() {
@@ -7,7 +6,10 @@ export default function InteractivePatientKiosk() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Demographics state
+  // Demographics & ABHA state
+  const [loginMode, setLoginMode] = useState('abha') // 'abha' | 'manual'
+  const [abhaInput, setAbhaInput] = useState('91-4820-9182-3491')
+  const [abhaPin, setAbhaPin] = useState('1234')
   const [formData, setFormData] = useState({
     fullName: '',
     age: '',
@@ -44,6 +46,37 @@ export default function InteractivePatientKiosk() {
   const handleStartDemographics = () => {
     setError(null)
     setStep('demographics')
+  }
+
+  const handleAbhaLogin = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/session/abha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          abha_id: abhaInput.trim() || '91-4820-9182-3491',
+          pin: abhaPin.trim() || '1234',
+          kiosk_id: 'portal-kiosk-01',
+        }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.message || 'ABHA Login failed')
+      }
+
+      const data = await res.json()
+      setSession(data)
+      setStep('consent')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCreateSession = async (e) => {
@@ -266,69 +299,143 @@ export default function InteractivePatientKiosk() {
             </button>
           </div>
 
+          {/* Login Mode Tabs */}
+          <div className="grid grid-cols-2 p-1.5 bg-sky-50 rounded-2xl border border-sky-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setLoginMode('abha')}
+              className={`py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                loginMode === 'abha'
+                  ? 'bg-white text-sky-700 shadow-sm border border-sky-200'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <span>🪪 ABHA ID Login</span>
+              <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-mono">Instant</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLoginMode('manual')}
+              className={`py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
+                loginMode === 'manual'
+                  ? 'bg-white text-sky-700 shadow-sm border border-sky-200'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <span>✍️ Manual Check-In</span>
+            </button>
+          </div>
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-semibold">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleCreateSession} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Full Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Aarav Sharma"
-                className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              />
-            </div>
+          {/* Mode A: ABHA Login */}
+          {loginMode === 'abha' && (
+            <form onSubmit={handleAbhaLogin} className="space-y-4">
+              <div className="p-4 bg-gradient-to-br from-sky-950 to-slate-900 rounded-2xl text-white space-y-3 border border-sky-800">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-sky-300 uppercase tracking-widest text-[10px]">National Health Authority</span>
+                  <span className="bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded text-[10px] font-mono border border-sky-500/30">ABDM M1 Ready</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-200 mb-1">14-Digit ABHA Number / Address</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 91-4820-9182-3491 or aarav@abdm"
+                    className="w-full p-3 bg-slate-800/90 border border-sky-500/50 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-mono text-sm text-white placeholder-slate-400"
+                    value={abhaInput}
+                    onChange={(e) => setAbhaInput(e.target.value)}
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-200 mb-1">4-Digit Security PIN / Quick OTP</label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    placeholder="1234"
+                    className="w-full p-3 bg-slate-800/90 border border-sky-500/50 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-mono text-sm text-white placeholder-slate-400"
+                    value={abhaPin}
+                    onChange={(e) => setAbhaPin(e.target.value)}
+                  />
+                  <span className="text-[10px] text-sky-300 mt-1 block">💡 Demo Mode: Use PIN 1234 or any 4-digit PIN for instant synthetic auth.</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold text-sm shadow-md shadow-sky-600/30 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? 'Authenticating ABHA ID…' : '🪪 Verify & Start Session →'}
+              </button>
+            </form>
+          )}
+
+          {/* Mode B: Manual Check-In */}
+          {loginMode === 'manual' && (
+            <form onSubmit={handleCreateSession} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Age</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Full Name</label>
                 <input
-                  type="number"
-                  placeholder="34"
+                  type="text"
+                  placeholder="e.g. Aarav Sharma"
                   className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
-                  value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Gender</label>
-                <select
-                  className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Age</label>
+                  <input
+                    type="number"
+                    placeholder="34"
+                    className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Gender</label>
+                  <select
+                    className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Phone Number</label>
-              <input
-                type="tel"
-                placeholder="+91 98765 43210"
-                className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition disabled:opacity-50"
-            >
-              {loading ? 'Starting Session…' : 'Continue to Consent →'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition disabled:opacity-50"
+              >
+                {loading ? 'Starting Session…' : 'Continue to Consent →'}
+              </button>
+            </form>
+          )}
         </div>
       )}
 

@@ -16,6 +16,10 @@ class ABHAService:
     def __init__(self) -> None:
         self.abdm_client = ABDMClient()
 
+    def authenticate_abha_pin(self, abha_id: str, pin: str = "1234") -> dict[str, Any]:
+        """Authenticate ABHA ID via synthetic PIN engine."""
+        return self.abdm_client.verify_abha_pin(abha_id, pin)
+
     def verify_and_link(self, abha_number: str, fhir_bundle: dict[str, Any]) -> dict[str, Any]:
         verification = self.abdm_client.verify_abha_number(abha_number)
         push_res = self.abdm_client.push_fhir_health_record(abha_number, fhir_bundle)
@@ -24,3 +28,4 @@ class ABHAService:
             "verification": verification,
             "abdm_link": push_res,
         }
+

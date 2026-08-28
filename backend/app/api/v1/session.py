@@ -9,8 +9,7 @@ Endpoints:
   - GET  /session/{enc_id}  : Retrieve session state and consent status.
 """
 
-from __future__ import annotations
-
+from datetime import datetime, timezone
 import uuid
 from typing import Any
 
@@ -22,7 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.patient import Consent, Encounter, Patient
 
+from app.services.abha_service import ABHAService
+
 router = APIRouter(tags=["session"])
+abha_service = ABHAService()
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────
@@ -32,6 +34,14 @@ class StartSessionRequest(BaseModel):
     gender: str | None = Field(default=None, json_schema_extra={"example": "Male"})
     phone: str | None = Field(default=None, json_schema_extra={"example": "+919876543210"})
     kiosk_id: str | None = Field(default="kiosk-01", json_schema_extra={"example": "kiosk-01"})
+    abha_number: str | None = Field(default=None, json_schema_extra={"example": "91-4820-9182-3491"})
+    abha_address: str | None = Field(default=None, json_schema_extra={"example": "aarav@abdm"})
+
+
+class AbhaLoginRequest(BaseModel):
+    abha_id: str = Field(..., json_schema_extra={"example": "91-4820-9182-3491"})
+    pin: str = Field(default="1234", json_schema_extra={"example": "1234"})
+    kiosk_id: str | None = Field(default="kiosk-01", json_schema_extra={"example": "kiosk-01"})
 
 
 class StartSessionResponse(BaseModel):
@@ -39,6 +49,9 @@ class StartSessionResponse(BaseModel):
     patient_id: str
     status: str
     created_at: str
+    abha_number: str | None = None
+    abha_address: str | None = None
+    full_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,15 +89,19 @@ async def start_session(
 ) -> dict[str, Any]:
     """Start a new patient check-in session at the Kiosk."""
     patient = Patient(
+        id=uuid.uuid4(),
         full_name=body.full_name,
         age=body.age,
         gender=body.gender,
         phone=body.phone,
+        abha_number=body.abha_number,
+        abha_address=body.abha_address,
     )
     db.add(patient)
     await db.flush()
 
     encounter = Encounter(
+        id=uuid.uuid4(),
         patient_id=patient.id,
         status="in_progress",
         kiosk_id=body.kiosk_id,
@@ -93,12 +110,68 @@ async def start_session(
     await db.commit()
     await db.refresh(encounter)
 
+    created_iso = encounter.created_at.isoformat() if encounter.created_at else datetime.now(timezone.utc).isoformat()
+
     return {
         "encounter_id": str(encounter.id),
         "patient_id": str(patient.id),
         "status": encounter.status,
-        "created_at": encounter.created_at.isoformat(),
+        "created_at": created_iso,
+        "abha_number": patient.abha_number,
+        "abha_address": patient.abha_address,
+        "full_name": patient.full_name,
     }
+
+
+@router.post("/session/abha", response_model=StartSessionResponse, status_code=status.HTTP_201_CREATED)
+async def start_session_via_abha(
+    body: AbhaLoginRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Instant Synthetic ABHA ID + PIN patient login and session initialization."""
+    auth_result = abha_service.authenticate_abha_pin(body.abha_id, body.pin)
+
+    # Check if patient already exists with this ABHA number
+    abha_num = auth_result["abha_number"]
+    stmt = select(Patient).where(Patient.abha_number == abha_num)
+    res = await db.execute(stmt)
+    patient = res.scalar_one_or_none()
+
+    if not patient:
+        patient = Patient(
+            id=uuid.uuid4(),
+            full_name=auth_result["full_name"],
+            age=auth_result["age"],
+            gender=auth_result["gender"],
+            phone=auth_result["phone"],
+            abha_number=abha_num,
+            abha_address=auth_result["abha_address"],
+        )
+        db.add(patient)
+        await db.flush()
+
+    encounter = Encounter(
+        id=uuid.uuid4(),
+        patient_id=patient.id,
+        status="in_progress",
+        kiosk_id=body.kiosk_id,
+    )
+    db.add(encounter)
+    await db.commit()
+    await db.refresh(encounter)
+
+    created_iso = encounter.created_at.isoformat() if encounter.created_at else datetime.now(timezone.utc).isoformat()
+
+    return {
+        "encounter_id": str(encounter.id),
+        "patient_id": str(patient.id),
+        "status": encounter.status,
+        "created_at": created_iso,
+        "abha_number": patient.abha_number,
+        "abha_address": patient.abha_address,
+        "full_name": patient.full_name,
+    }
+
 
 
 @router.post("/consent", response_model=RecordConsentResponse)
@@ -213,5 +286,7 @@ async def get_session_status(
             "age": patient.age if patient else None,
             "gender": patient.gender if patient else None,
             "phone": patient.phone if patient else None,
+            "abha_number": patient.abha_number if patient else None,
+            "abha_address": patient.abha_address if patient else None,
         } if patient else None,
     }

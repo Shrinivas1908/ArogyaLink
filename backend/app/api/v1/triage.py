@@ -86,3 +86,36 @@ async def get_triage_status(
         "triggered_flags": enc.red_flags or eval_result["triggered_flags"],
         "requires_immediate_escalation": (enc.triage_level == "CRITICAL"),
     }
+
+
+class DemoTriageRequest(BaseModel):
+    """Public demo triage — accepts symptom labels directly, no encounter required."""
+    symptoms: list[str]
+
+
+@router.post("/demo", tags=["triage"])
+async def demo_triage(body: DemoTriageRequest) -> dict[str, Any]:
+    """Public portal demo triage — evaluates symptom names using the red-flag engine rules.
+    No encounter_id or authentication required. Used by the SymptomTriageWidget."""
+    # Convert symptom labels to answer dict format the red-flag engine understands
+    answers: dict[str, Any] = {}
+    symptom_map = {
+        "Chest Pain or Tightness": {"chief_complaint": "chest_pain", "chest_pain_severity": "severe"},
+        "Difficulty Breathing": {"chief_complaint": "breathlessness", "breathlessness_severity": "severe"},
+        "High Fever (> 102°F)": {"chief_complaint": "fever", "fever_temperature": "103"},
+        "Severe Headache": {"chief_complaint": "headache", "headache_severity": "severe"},
+        "Dizziness or Fainting": {"chief_complaint": "dizziness", "consciousness": "syncope"},
+        "Abdominal Pain": {"chief_complaint": "abdominal_pain", "pain_severity": "moderate"},
+    }
+    for sym in body.symptoms:
+        sym_answers = symptom_map.get(sym, {})
+        answers.update(sym_answers)
+
+    eval_result = rf_engine.evaluate_answers(answers)
+    return {
+        "symptoms_evaluated": body.symptoms,
+        "triage_level": eval_result.get("triage_level", "ROUTINE"),
+        "has_red_flags": eval_result.get("has_red_flags", False),
+        "triggered_flags": eval_result.get("triggered_flags", []),
+        "requires_immediate_escalation": eval_result.get("requires_immediate_escalation", False),
+    }

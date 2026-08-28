@@ -30,6 +30,31 @@ class ABDMClient:
             "abdm_env": self.env,
         }
 
+    def verify_abha_pin(self, abha_id: str, pin: str = "1234") -> dict[str, Any]:
+        """Verify ABHA ID + 4-digit PIN / OTP synthetically (<50ms response)."""
+        clean_abha = abha_id.strip()
+        # Default synthetic profile mapping
+        name = "Aarav Sharma"
+        gender = "Male"
+        age = 34
+        phone = "+919876543210"
+        dob = "1992-05-14"
+        abha_addr = f"{clean_abha.replace('-', '').lower()}@abdm" if "@" not in clean_abha else clean_abha
+
+        return {
+            "status": "AUTHENTICATED",
+            "auth_mode": "SYNTHETIC_PIN",
+            "abha_number": clean_abha,
+            "abha_address": abha_addr,
+            "full_name": name,
+            "gender": gender,
+            "age": age,
+            "phone": phone,
+            "dob": dob,
+            "verified": True,
+            "abdm_env": self.env,
+        }
+
     def push_fhir_health_record(self, abha_number: str, fhir_bundle: dict[str, Any]) -> dict[str, Any]:
         return {
             "status": "SUCCESS",
@@ -38,3 +63,4 @@ class ABDMClient:
             "records_linked": len(fhir_bundle.get("entry", [])),
             "gateway_url": self.base_url,
         }
+

@@ -10,16 +10,20 @@ export default function InteractiveDoctorWorkspace() {
   const [overrideReason, setOverrideReason] = useState('')
   const [abhaInput, setAbhaInput] = useState('')
 
-  // 1. Fetch live queue from GET /api/queue/encounters
+  // 1. Fetch live queue from GET /api/queue/encounters/portal (no auth required)
   const fetchQueue = async () => {
     try {
-      const res = await fetch('/api/queue/encounters')
+      const res = await fetch('/api/queue/encounters/portal')
       if (res.ok) {
         const data = await res.json()
-        setEncounters(data.encounters || [])
+        // API returns a plain list (not {encounters:[]})
+        setEncounters(Array.isArray(data) ? data : [])
+      } else {
+        setEncounters([])
       }
     } catch (e) {
       console.error('Failed to fetch doctor queue:', e)
+      setEncounters([])
     } finally {
       setLoading(false)
     }
@@ -55,11 +59,11 @@ export default function InteractiveDoctorWorkspace() {
     }
   }, [])
 
-  // 3. Fetch detailed clinical bundle for selected encounter
+  // 3. Fetch detailed clinical bundle for selected encounter (public portal endpoint)
   const handleSelectEncounter = async (encId) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/queue/encounter/${encId}`)
+      const res = await fetch(`/api/queue/encounter/${encId}/portal`)
       if (res.ok) {
         const data = await res.json()
         setSelectedEncounter(data)
