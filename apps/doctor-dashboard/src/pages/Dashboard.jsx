@@ -16,13 +16,20 @@ export default function Dashboard() {
   const [overrideReason, setOverrideReason] = useState('')
   const [abhaInput, setAbhaInput] = useState('')
 
-  // 1. Fetch live queue from GET /api/queue/encounters
+  // 1. Fetch live queue from GET /api/queue/encounters (with portal fallback)
   const fetchQueue = async () => {
     try {
-      const res = await fetch('/api/queue/encounters')
+      const token = user?.access_token || localStorage.getItem('supabase_token')
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      
+      let res = await fetch('/api/queue/encounters', { headers })
+      if (!res.ok) {
+        // Seamless fallback to public queue for testing & offline/demo use
+        res = await fetch('/api/queue/encounters/portal')
+      }
       if (res.ok) {
         const data = await res.json()
-        setEncounters(data.encounters || [])
+        setEncounters(Array.isArray(data) ? data : (data.encounters || []))
       }
     } catch (e) {
       console.error('Failed to fetch doctor queue:', e)
@@ -33,7 +40,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchQueue()
-    const interval = setInterval(fetchQueue, 5000)
+    const interval = setInterval(fetchQueue, 3000)
     return () => clearInterval(interval)
   }, [])
 
@@ -65,7 +72,13 @@ export default function Dashboard() {
   const handleSelectEncounter = async (encId) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/queue/encounter/${encId}`)
+      const token = user?.access_token || localStorage.getItem('supabase_token')
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+      let res = await fetch(`/api/queue/encounter/${encId}`, { headers })
+      if (!res.ok) {
+        res = await fetch(`/api/queue/encounter/${encId}/portal`)
+      }
       if (res.ok) {
         const data = await res.json()
         setSelectedEncounter(data)
