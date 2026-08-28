@@ -95,9 +95,9 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // 2. Real-time WebSocket connection
+  // 2. Real-time WebSocket connection with safe cleanup
   useEffect(() => {
-    let ws
+    let ws = null
     try {
       ws = new WebSocket('ws://127.0.0.1:8000/ws/notifications')
       ws.onmessage = (event) => {
@@ -115,7 +115,11 @@ export default function Dashboard() {
         } catch {}
       }
     } catch {}
-    return () => ws?.close()
+    return () => {
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        ws.close()
+      }
+    }
   }, [])
 
   // 3. Select encounter
