@@ -98,20 +98,25 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // 2. Real-time WebSocket connection with safe cleanup & keepalive
+  // 2. Connect WebSocket for Real-Time Escalations with keepalive
   useEffect(() => {
     let ws = null
     let pingInterval = null
     let reconnectTimeout = null
+    let isMounted = true
 
     const connectWS = () => {
+      if (!isMounted) return
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         const host = window.location.hostname || '127.0.0.1'
         ws = new WebSocket(`${protocol}//${host}:8000/ws/notifications`)
 
         ws.onopen = () => {
-          // Send keepalive ping every 15 seconds to keep socket active
+          if (!isMounted) {
+            if (ws.readyState === WebSocket.OPEN) ws.close()
+            return
+          }
           pingInterval = setInterval(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
               ws.send('ping')
@@ -136,13 +141,14 @@ export default function Dashboard() {
         }
 
         ws.onerror = () => {
-          // Fallback gracefully without browser console error noise
+          // Fallback gracefully without unhandled exception
         }
 
         ws.onclose = () => {
           if (pingInterval) clearInterval(pingInterval)
-          // Attempt graceful reconnect after 5s
-          reconnectTimeout = setTimeout(connectWS, 5000)
+          if (isMounted) {
+            reconnectTimeout = setTimeout(connectWS, 5000)
+          }
         }
       } catch {
         // Fallback gracefully
@@ -152,9 +158,10 @@ export default function Dashboard() {
     connectWS()
 
     return () => {
+      isMounted = false
       if (pingInterval) clearInterval(pingInterval)
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close()
       }
     }
