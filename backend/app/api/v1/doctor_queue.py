@@ -18,11 +18,13 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.deps import require_doctor
 from app.engines.question_engine import QuestionEngine
+from app.integrations.gemini_client import GeminiClient
 from app.models.patient import Consent, Encounter, Patient
 from app.models.intake import Answer
 
 router = APIRouter(prefix="/queue", tags=["doctor_queue"])
 q_engine = QuestionEngine()
+gemini_client = GeminiClient()
 
 
 class EncounterQueueItem(BaseModel):
@@ -54,6 +56,7 @@ class ClinicalReviewBundle(BaseModel):
     consented: bool
     consent_version: str | None = None
     answers: dict[str, Any]
+    summary: dict[str, Any] | None = None
     created_at: str
 
 
@@ -101,7 +104,6 @@ async def _build_queue(
     encounters = res.scalars().all()
 
     priority_map = {"CRITICAL": 0, "URGENT": 1, "ROUTINE": 2}
-    # Sort priority: Critical first, then newest timestamp
     sorted_encounters = sorted(
         encounters,
         key=lambda e: (priority_map.get(e.triage_level, 3), -(e.created_at.timestamp() if e.created_at else 0))
@@ -109,7 +111,6 @@ async def _build_queue(
 
     results = []
     for e in sorted_encounters:
-        # Resolve patient complaint from answers if available
         answers = await q_engine.get_answers_dict(str(e.id), db)
         complaint = answers.get("q_chief_complaint", None)
         if isinstance(complaint, list):
@@ -175,7 +176,7 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
                 {
                     "rule_id": "RF-CARD-001",
                     "severity": "CRITICAL",
-                    "description": "Rule RF-CARD-001 triggered by confirmed intake evidence.",
+                    "description": "Rule RF-CARD-001 triggered: immediate clinical attention advised.",
                     "evidence_snippet": "Severe chest pain radiating to left shoulder with acute dyspnea.",
                 }
             ],
@@ -186,6 +187,28 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
                 "q_duration": "less_than_1_hour",
                 "q_severity": "severe",
                 "q_associated_symptoms": ["shortness_of_breath", "sweating"],
+            },
+            "summary": {
+                "chief_complaint": "Acute retrosternal chest pain with left shoulder radiation.",
+                "duration": "1 hour",
+                "severity": "Severe / Critical",
+                "history_of_present_illness": "54-year-old female presents with acute onset severe retrosternal pressure radiating to the left arm and shoulder, accompanied by shortness of breath and diaphoresis.",
+                "differential_diagnoses": [
+                    {"condition": "Acute Coronary Syndrome (ACS / STEMI)", "likelihood": "High", "rationale": "Classic radiating pain pattern with autonomic symptoms."},
+                    {"condition": "Acute Aortic Dissection", "likelihood": "Moderate", "rationale": "Must rule out in tearing retrosternal pain."},
+                    {"condition": "Esophageal Spasm / GERD", "likelihood": "Low", "rationale": "Secondary consideration once cardiac etiology is excluded."}
+                ],
+                "recommended_vitals_and_labs": [
+                    "Stat 12-Lead ECG within 10 minutes",
+                    "Continuous Cardiac & SpO2 Monitoring",
+                    "High-Sensitivity Cardiac Troponin I/T",
+                    "Serum Electrolytes and CBC Panel"
+                ],
+                "suggested_doctor_actions": [
+                    "Administer Aspirin 325mg chewable if not contraindicated",
+                    "Establish IV access and initiate oxygen therapy if SpO2 < 90%",
+                    "Consult Cardiology for emergency catheterization review"
+                ]
             },
             "created_at": "2026-08-28T11:00:00Z",
         }
@@ -210,6 +233,9 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
     else:
         complaint_str = "Severe chest discomfort" if enc.triage_level == "CRITICAL" else "Clinical Intake Review"
 
+    # Generate clinical summary
+    clinical_summary = gemini_client.generate_clinical_summary(answers)
+
     return {
         "encounter_id": str(enc.id),
         "patient_id": str(enc.patient_id),
@@ -224,5 +250,6 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
         "consented": enc.consent.consented if enc.consent else False,
         "consent_version": enc.consent.consent_version if enc.consent else None,
         "answers": answers,
+        "summary": clinical_summary,
         "created_at": enc.created_at.isoformat() if enc.created_at else "",
     }
