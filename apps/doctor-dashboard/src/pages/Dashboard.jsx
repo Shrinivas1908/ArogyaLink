@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchQueue()
-    const interval = setInterval(fetchQueue, 5000)
+    const interval = setInterval(fetchQueue, 2500)
     return () => clearInterval(interval)
   }, [])
 
@@ -103,6 +103,9 @@ export default function Dashboard() {
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
+          // Always refresh live queue on any patient activity
+          fetchQueue()
+
           if (msg.event === 'CRITICAL_ESCALATION') {
             setEscalationAlert({
               encounter_id: msg.data.encounter_id || 'AL-2048',
@@ -110,7 +113,6 @@ export default function Dashboard() {
               symptoms: msg.data.symptoms || 'Severe discomfort + breathing difficulty + radiating pain.',
             })
             setShowToast(true)
-            fetchQueue()
           }
         } catch {}
       }

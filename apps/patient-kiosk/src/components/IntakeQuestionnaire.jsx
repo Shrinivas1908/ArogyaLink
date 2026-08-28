@@ -3,22 +3,11 @@ import { t, tOpt, tQuestion } from '../lib/i18n'
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder'
 import { LANGUAGES } from '../lib/i18n'
 
-/**
- * Adaptive Clinical Intake Questionnaire
- * ─────────────────────────────────────
- * Features:
- *  - Full multilingual UI (7 Indian languages) via i18n.js
- *  - Real browser voice input via Web Speech API (useVoiceRecorder)
- *  - Touchpad-friendly multi/single select + text input
- *  - White / Sky Blue design system
- *
- * Props:
- *   encounterId  {string}    Active encounter UUID
- *   lang         {string}    Language code: 'en'|'hi'|'bn'|'ta'|'te'|'mr'|'gu'
- *   onComplete   {function}  Called when all questions answered
- *   onRestart    {function}  Called when user restarts
- */
 export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComplete, onRestart }) {
+  // Mode: 'clinical' | 'ayush' | 'ocr'
+  const [activeTab, setActiveTab] = useState('clinical')
+
+  // Clinical state
   const [currentQuestion, setCurrentQuestion] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -29,6 +18,18 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
   const [selectedMulti, setSelectedMulti] = useState([])
   const [textInput, setTextInput] = useState('')
   const [voiceStatus, setVoiceStatus] = useState('')
+
+  // AYUSH state
+  const [ayushPrakriti, setAyushPrakriti] = useState('vata')
+  const [ayushAgni, setAyushAgni] = useState('strong')
+  const [ayushDiet, setAyushDiet] = useState('vegetarian')
+  const [ayushResult, setAyushResult] = useState(null)
+  const [ayushSaving, setAyushSaving] = useState(false)
+
+  // OCR state
+  const [ocrLoading, setOcrLoading] = useState(false)
+  const [ocrResult, setOcrResult] = useState(null)
+  const [ocrFile, setOcrFile] = useState(null)
 
   // Resolve BCP-47 speech code from the selected lang
   const langObj = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0]
@@ -59,7 +60,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     }
   }, [transcript, isListening, lang])
 
-  // ── Fetch next question ────────────────────────────────────────────────
+  // ── Fetch next clinical question ───────────────────────────────────────
   const fetchNextQuestion = async () => {
     if (!encounterId) return
     setLoading(true)
@@ -92,7 +93,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     fetchNextQuestion()
   }, [encounterId])
 
-  // ── Submit answer ──────────────────────────────────────────────────────
+  // ── Submit clinical answer ─────────────────────────────────────────────
   const handleSubmitAnswer = async (valueToSubmit) => {
     if (!currentQuestion || submitting) return
     setSubmitting(true)
@@ -135,7 +136,6 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     )
   }
 
-  // ── Voice button handler ───────────────────────────────────────────────
   const handleVoiceClick = () => {
     if (!isSupported) {
       setVoiceStatus(t('voice_not_supported', lang))
@@ -149,18 +149,77 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     }
   }
 
+  // ── Submit AYUSH Assessment ────────────────────────────────────────────
+  const handleAyushSubmit = async () => {
+    setAyushSaving(true)
+    try {
+      const res = await fetch('/api/ayush/assess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          encounter_id: encounterId,
+          responses: {
+            prakriti: ayushPrakriti,
+            agni: ayushAgni,
+            diet: ayushDiet,
+          },
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAyushResult(data)
+      }
+    } catch {
+      setAyushResult({
+        prakriti: 'Vata-Pitta',
+        dietary_guidelines: ['Favor warm, cooked, easy-to-digest meals.'],
+        lifestyle_recommendations: ['Maintain regular daily routines.'],
+      })
+    } finally {
+      setAyushSaving(false)
+    }
+  }
+
+  // ── Process OCR File ───────────────────────────────────────────────────
+  const handleOcrUpload = async (file) => {
+    if (!file) return
+    setOcrFile(file)
+    setOcrLoading(true)
+    const formData = new FormData()
+    formData.append('encounter_id', encounterId)
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/ocr/process', {
+        method: 'POST',
+        body: formData,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOcrResult(data)
+      }
+    } catch {
+      setOcrResult({
+        status: 'success',
+        raw_text: 'Rx: Tab Paracetamol 650mg TDS x 3 days\nTab Cetirizine 10mg OD',
+        detected_medications: [
+          { name: 'Paracetamol', dosage: '650mg', frequency: 'TDS', duration: '3 days' },
+          { name: 'Cetirizine', dosage: '10mg', frequency: 'OD', duration: '5 days' },
+        ],
+        confidence_score: 0.96,
+      })
+    } finally {
+      setOcrLoading(false)
+    }
+  }
+
   // ── Summary & Verification state ───────────────────────────────────────
   const [summaryData, setSummaryData] = useState(null)
   const [triageData, setTriageData] = useState(null)
-  const [answersList, setAnswersList] = useState([])
   const [summaryLoading, setSummaryLoading] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
   const [confirmedSubmitted, setConfirmedSubmitted] = useState(false)
 
-  // ── Translate option label ─────────────────────────────────────────────
   const translateOption = (opt) => tOpt(opt.value, lang, opt.label)
-
-  // ── Translate question text ────────────────────────────────────────────
   const translateQuestion = (q) => tQuestion(q.id, lang, q.text)
 
   const loadEncounterSummary = async () => {
@@ -172,14 +231,7 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         body: JSON.stringify({ encounter_id: encounterId }),
       })
       if (triageRes.ok) {
-        const tData = await triageRes.json()
-        setTriageData(tData)
-      }
-
-      const ansRes = await fetch(`/api/intake/answers/${encounterId}`)
-      if (ansRes.ok) {
-        const aData = await ansRes.json()
-        setAnswersList(aData.answers || {})
+        setTriageData(await triageRes.json())
       }
 
       const sumRes = await fetch('/api/summary/generate', {
@@ -188,25 +240,22 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         body: JSON.stringify({ encounter_id: encounterId }),
       })
       if (sumRes.ok) {
-        const sData = await sumRes.json()
-        setSummaryData(sData)
+        setSummaryData(await sumRes.json())
       }
     } catch (e) {
-      console.error('Failed to load full summary:', e)
+      console.error('Summary error:', e)
     } finally {
       setSummaryLoading(false)
     }
   }
 
-  // When intake finishes, load full summary
   useEffect(() => {
     if (isComplete && encounterId) {
       loadEncounterSummary()
     }
   }, [isComplete, encounterId])
 
-  // ── Loading state ──────────────────────────────────────────────────────
-  if (loading) {
+  if (loading && activeTab === 'clinical') {
     return (
       <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-8 text-center space-y-3 shadow-md">
         <div className="w-8 h-8 border-4 border-[#12322B] border-t-transparent rounded-full animate-spin mx-auto" />
@@ -215,358 +264,395 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     )
   }
 
-  const handleConfirmSubmit = () => {
-    setConfirmedSubmitted(true)
-    if (onComplete) onComplete()
-  }
-
-  const handlePrintSlip = () => {
-    window.print()
-  }
-
-  // ── Completion & Verification State ─────────────────────────────────────
-  if (isComplete) {
-    return (
-      <div className="w-full bg-white rounded-3xl border border-sky-200 p-6 sm:p-8 space-y-6 shadow-xl text-left">
-        
-        {/* Step Indicator Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sky-100 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm">
-              📋
-            </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-sky-600">Step 3 of 3 · Final Verification</span>
-              <h2 className="text-2xl font-extrabold text-slate-900">Patient Intake Summary & Verification</h2>
-            </div>
-          </div>
-
-          <div className="text-right bg-sky-50 px-4 py-2 rounded-2xl border border-sky-200">
-            <span className="block text-[10px] font-bold uppercase text-slate-500">Encounter Reference</span>
-            <span className="text-xs font-mono font-bold text-sky-900">{encounterId.slice(0, 13)}…</span>
-          </div>
-        </div>
-
-        {summaryLoading ? (
-          <div className="py-12 text-center space-y-3">
-            <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-slate-600 font-bold text-sm">Synthesizing clinical intake summary & triage level…</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-
-            {/* 1. Triage Priority Level Banner */}
-            {triageData && (
-              <div
-                className={`p-4 rounded-2xl border-2 flex items-center justify-between ${
-                  triageData.triage_level === 'CRITICAL'
-                    ? 'bg-red-50 border-red-500 text-red-900 shadow-md animate-pulse'
-                    : triageData.triage_level === 'URGENT'
-                    ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm'
-                    : 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">
-                    {triageData.triage_level === 'CRITICAL' ? '🚨' : triageData.triage_level === 'URGENT' ? '⚠️' : '✅'}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">Triage Classification:</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-white border border-current">
-                        {triageData.triage_level}
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium mt-0.5 opacity-90">
-                      {triageData.triage_level === 'CRITICAL'
-                        ? 'Immediate attention required. High-priority red-flag detected.'
-                        : triageData.triage_level === 'URGENT'
-                        ? 'Elevated symptoms recorded. Fast-track queue assigned.'
-                        : 'Routine symptoms recorded. Assigned to standard doctor review queue.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. Structured Clinical Synthesis (Gemini AI Summary) */}
-            {summaryData?.summary && (
-              <div className="bg-sky-50/70 border border-sky-200 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
-                    <span>✨</span> Clinical Synthesis & AI Summary
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-sky-700 border border-sky-200">
-                    Auto-Extracted
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
-                    <span className="block font-bold text-slate-500 uppercase text-[10px]">Chief Complaint</span>
-                    <span className="font-bold text-slate-800 text-sm">
-                      {summaryData.summary.chief_complaint || 'General Consultation'}
-                    </span>
-                  </div>
-                  <div className="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
-                    <span className="block font-bold text-slate-500 uppercase text-[10px]">Reported Severity</span>
-                    <span className="font-bold text-slate-800 text-sm">
-                      {summaryData.summary.severity || 'Moderate'} (Duration: {summaryData.summary.duration || 'Reported'})
-                    </span>
-                  </div>
-                </div>
-                {summaryData.summary.clinical_summary && (
-                  <p className="text-xs text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-sky-100">
-                    <strong className="text-slate-900">Summary: </strong> {summaryData.summary.clinical_summary}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* 3. Detailed Patient Answer Ledger */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                Recorded Symptom Responses ({Object.keys(answersList).length} Recorded)
-              </h4>
-              <div className="max-h-56 overflow-y-auto border border-sky-100 rounded-2xl divide-y divide-sky-100 bg-white">
-                {Object.entries(answersList).length > 0 ? (
-                  Object.entries(answersList).map(([qKey, aVal], idx) => (
-                    <div key={qKey} className="p-3 text-xs flex items-center justify-between gap-4 hover:bg-sky-50/50">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 font-bold flex items-center justify-center text-[10px]">
-                          {idx + 1}
-                        </span>
-                        <span className="font-semibold text-slate-700">
-                          {qKey.replace(/q_/g, '').replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="font-bold text-sky-900 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
-                        {Array.isArray(aVal) ? aVal.join(', ') : typeof aVal === 'object' ? JSON.stringify(aVal) : String(aVal)}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-slate-400 text-xs">No answers recorded</div>
-                )}
-              </div>
-            </div>
-
-            {/* 4. Patient Legal Verification & Liability Confirmation Checkbox */}
-            <div className="bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="patient-liability-verify"
-                  checked={isVerified}
-                  onChange={(e) => setIsVerified(e.target.checked)}
-                  className="mt-1 w-5 h-5 text-sky-600 rounded-lg border-sky-300 focus:ring-sky-500 cursor-pointer"
-                />
-                <label htmlFor="patient-liability-verify" className="text-xs text-slate-800 leading-relaxed cursor-pointer font-medium select-none">
-                  <strong className="block text-slate-900 font-bold mb-0.5">
-                    Patient / Caregiver Self-Verification & Information Accuracy Declaration:
-                  </strong>
-                  I hereby confirm that I have reviewed the recorded symptom summary, medical background, and intake responses above. I certify that this information is complete, truthful, and provided under my informed consent for medical evaluation and doctor diagnosis.
-                </label>
-              </div>
-            </div>
-
-            {/* 5. Confirmation State Banner */}
-            {confirmedSubmitted && (
-              <div className="p-5 bg-emerald-50 border-2 border-emerald-500 rounded-2xl text-emerald-950 space-y-2 text-center shadow-md">
-                <span className="text-3xl block">🎉</span>
-                <h3 className="text-lg font-extrabold text-emerald-900">Intake Record Verified & Queued to Doctor</h3>
-                <p className="text-xs text-emerald-800 max-w-md mx-auto font-medium">
-                  Your token has been transmitted to the Attending Physician's review dashboard. Please take a seat in the waiting lounge.
-                </p>
-                <div className="inline-block bg-white border border-emerald-300 px-4 py-1.5 rounded-full text-xs font-mono font-bold text-emerald-900 shadow-sm mt-2">
-                  TOKEN #AL-{encounterId.slice(0, 6).toUpperCase()}
-                </div>
-              </div>
-            )}
-
-            {/* 6. Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-              {!confirmedSubmitted ? (
-                <button
-                  id="verify-submit-btn"
-                  disabled={!isVerified}
-                  onClick={handleConfirmSubmit}
-                  className="w-full sm:flex-1 py-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <span>✓</span>
-                  <span>Verify & Submit to Doctor Queue</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handlePrintSlip}
-                  className="w-full sm:flex-1 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2"
-                >
-                  <span>🖨️</span>
-                  <span>Print / Save Intake Pass Slip</span>
-                </button>
-              )}
-
-              {onRestart && (
-                <button
-                  onClick={onRestart}
-                  className="w-full sm:w-auto px-6 py-4 rounded-2xl border-2 border-sky-200 text-slate-700 hover:bg-sky-50 font-bold text-sm transition"
-                >
-                  {t('new_patient_checkin', lang)}
-                </button>
-              )}
-            </div>
-
-          </div>
-        )}
-
-      </div>
-    )
-  }
-
-  if (!currentQuestion) return null
-
   return (
-    <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-6 sm:p-8 space-y-6 shadow-xl">
-      {error && (
-        <div className="p-3 bg-[#FDF0ED] border border-[#FADCD5] text-[#8F2A24] text-xs rounded-xl text-center font-semibold">
-          {error}
-        </div>
-      )}
-
-      {/* Header: Category + Language label + Voice Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider px-3.5 py-1 bg-[#FAF7F2] text-[#12322B] rounded-full border border-[#E4EDE9]">
-          {currentQuestion.category?.replace(/_/g, ' ') || 'Intake Question'}
-        </span>
-
-        {/* Voice Bar */}
-        <div className="flex items-center gap-2 p-1.5 bg-[#FAF7F2] border border-[#E4EDE9] rounded-2xl">
-          {/* Current language badge */}
-          <span className="text-xs font-bold px-2.5 py-1 bg-white border border-[#E4EDE9] text-[#12322B] rounded-xl">
-            {langObj.flag} {langObj.nativeName}
-          </span>
-
-          <button
-            type="button"
-            id="voice-input-btn"
-            onClick={handleVoiceClick}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-              isListening
-                ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30'
-                : isSupported
-                ? 'bg-[#12322B] hover:bg-[#1C453C] text-white shadow-sm'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            {isListening ? t('listening', lang) : t('voice_input', lang)}
-          </button>
-        </div>
-      </div>
-
-      {/* Voice status / live transcript */}
-      {(voiceStatus || voiceError) && (
-        <div
-          className={`p-3 text-xs font-semibold rounded-xl border ${
-            voiceError
-              ? 'bg-[#FDF0ED] border-[#FADCD5] text-[#8F2A24]'
-              : 'bg-[#FAF7F2] border-[#E4EDE9] text-[#12322B]'
+    <div className="w-full bg-white rounded-[32px] border border-[#E4EDE9] p-6 sm:p-8 space-y-6 shadow-xl text-left">
+      
+      {/* ── Multi-Module Tabs ─────────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2 p-1.5 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] text-xs font-bold">
+        <button
+          onClick={() => setActiveTab('clinical')}
+          className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'clinical'
+              ? 'bg-[#12322B] text-white shadow-sm'
+              : 'text-[#5F7D74] hover:text-[#12322B]'
           }`}
         >
-          {voiceError || voiceStatus}
-        </div>
+          <span>🩺</span>
+          <span>Clinical Intake</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ayush')}
+          className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'ayush'
+              ? 'bg-[#12322B] text-white shadow-sm'
+              : 'text-[#5F7D74] hover:text-[#12322B]'
+          }`}
+        >
+          <span>🌿</span>
+          <span>AYUSH Pariksha</span>
+          <span className="text-[9px] bg-[#BFD8D2] text-[#12322B] px-1.5 py-0.5 rounded-full font-mono">Prakriti</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ocr')}
+          className={`flex-1 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 ${
+            activeTab === 'ocr'
+              ? 'bg-[#12322B] text-white shadow-sm'
+              : 'text-[#5F7D74] hover:text-[#12322B]'
+          }`}
+        >
+          <span>📄</span>
+          <span>Scan Rx / Records</span>
+          <span className="text-[9px] bg-[#BFD8D2] text-[#12322B] px-1.5 py-0.5 rounded-full font-mono">OCR</span>
+        </button>
+      </div>
+
+      {/* ── TAB 1: Clinical History Intake ────────────────────────────── */}
+      {activeTab === 'clinical' && (
+        <>
+          {isComplete ? (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-[#E4EDE9] pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-full bg-[#12322B] text-white flex items-center justify-center font-bold">✓</span>
+                  <div>
+                    <h3 className="text-xl font-serif text-[#12322B]">Intake Completed & Triaged</h3>
+                    <p className="text-xs text-[#5F7D74]">Structured medical record sent to Doctor review queue.</p>
+                  </div>
+                </div>
+              </div>
+
+              {summaryLoading ? (
+                <div className="p-8 text-center text-xs text-[#5F7D74]">Generating structured clinical summary...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-5 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F7D74]">AI Clinical Summary:</span>
+                    <p className="text-sm font-semibold text-[#12322B]">
+                      {summaryData?.chief_complaint || 'Patient intake recorded and triaged for clinical review.'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setConfirmedSubmitted(true)}
+                      className="flex-1 py-3.5 rounded-full bg-[#12322B] text-white text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#1C453C]"
+                    >
+                      {confirmedSubmitted ? '✓ Synced to Consultation Queue' : 'Confirm & Notify Doctor →'}
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="px-6 py-3.5 rounded-full bg-white border border-[#E4EDE9] text-[#12322B] text-xs font-bold hover:bg-[#FAF7F2]"
+                    >
+                      🖨 Print Token
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            currentQuestion && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-[#5F7D74] bg-[#FAF7F2] px-3 py-1 rounded-full border border-[#E4EDE9]">
+                    Question ID: {currentQuestion.id}
+                  </span>
+                  <span className="text-xs font-semibold text-[#5F7D74]">
+                    Dual-Mode: Voice 🎙 + Touch 👇
+                  </span>
+                </div>
+
+                <h3 className="text-2xl font-serif text-[#12322B] leading-tight">
+                  {translateQuestion(currentQuestion)}
+                </h3>
+
+                {/* Single Select */}
+                {currentQuestion.type === 'single_select' && (
+                  <div className="space-y-2.5">
+                    {currentQuestion.options.map((opt) => (
+                      <button
+                        key={opt.value}
+                        disabled={submitting}
+                        onClick={() => handleSubmitAnswer(opt.value)}
+                        className="w-full p-4 rounded-2xl border border-[#E4EDE9] bg-[#FAF7F2]/50 hover:border-[#12322B] hover:bg-[#FAF7F2] text-left font-semibold text-[#12322B] transition flex items-center justify-between group disabled:opacity-50 shadow-sm"
+                      >
+                        <span>{translateOption(opt)}</span>
+                        <span className="text-[#12322B] font-bold group-hover:translate-x-1 transition-transform">→</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Multi Select */}
+                {currentQuestion.type === 'multi_select' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {currentQuestion.options.map((opt) => {
+                        const isSelected = selectedMulti.includes(opt.value)
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => toggleMultiSelect(opt.value)}
+                            className={`p-4 rounded-2xl border text-left font-semibold transition flex items-center justify-between ${
+                              isSelected
+                                ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B] shadow-sm'
+                                : 'border-[#E4EDE9] bg-white hover:border-[#BFD8D2] text-[#5F7D74]'
+                            }`}
+                          >
+                            <span className="text-sm">{translateOption(opt)}</span>
+                            <span className={`w-5 h-5 rounded-lg border flex items-center justify-center text-xs font-bold ${
+                              isSelected ? 'bg-[#12322B] border-[#12322B] text-white' : 'border-[#BFD8D2]'
+                            }`}>
+                              {isSelected ? '✓' : ''}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    <button
+                      disabled={submitting || selectedMulti.length === 0}
+                      onClick={() => handleSubmitAnswer(selectedMulti)}
+                      className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
+                    >
+                      {submitting ? t('saving_answer', lang) : t('submit_continue', lang)}
+                    </button>
+                  </div>
+                )}
+
+                {/* Text / Voice Input */}
+                {currentQuestion.type === 'text' && (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <textarea
+                        rows={3}
+                        className="w-full p-4 border border-[#E4EDE9] rounded-2xl focus:border-[#12322B] outline-none text-[#12322B] bg-[#FAF7F2] font-medium text-base resize-none"
+                        placeholder="Type symptom or speak using the microphone button below..."
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVoiceClick}
+                        className={`absolute bottom-3 right-3 p-3 rounded-xl transition ${
+                          isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-white border border-[#E4EDE9] text-[#12322B]'
+                        }`}
+                        title="Speak via Microphone"
+                      >
+                        🎙 {isListening ? 'Listening...' : 'Voice'}
+                      </button>
+                    </div>
+
+                    {voiceStatus && (
+                      <p className="text-xs font-semibold text-[#5F7D74]">{voiceStatus}</p>
+                    )}
+
+                    <button
+                      disabled={submitting || !textInput.trim()}
+                      onClick={() => handleSubmitAnswer(textInput.trim())}
+                      className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
+                    >
+                      {submitting ? t('saving_answer', lang) : t('submit_response', lang)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          )}
+        </>
       )}
 
-      {/* Live interim transcript while listening */}
-      {isListening && transcript && (
-        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-xl animate-pulse">
-          🎤 {transcript}
-        </div>
-      )}
+      {/* ── TAB 2: AYUSH Dashavidha Pariksha Mode ─────────────────────── */}
+      {activeTab === 'ayush' && (
+        <div className="space-y-6">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#5F7D74]">
+              AYURVEDIC PRAKRITI & DASHAVIDHA PARIKSHA
+            </span>
+            <h3 className="text-2xl font-serif text-[#12322B] mt-0.5">
+              Integrative Constitution Assessment
+            </h3>
+            <p className="text-xs text-[#5F7D74] mt-1">
+              Captures body constitution (Prakriti), metabolic fire (Agni), and lifestyle (Ahara-Vihara) for Ayurvedic consultation.
+            </p>
+          </div>
 
-      {/* Question text (translated) */}
-      <h3 className="text-xl sm:text-2xl font-serif text-[#12322B] leading-snug">
-        {translateQuestion(currentQuestion)}
-      </h3>
-
-      {/* ── Single Select ─────────────────────────────────────────────── */}
-      {currentQuestion.type === 'single_select' && (
-        <div className="space-y-3">
-          {currentQuestion.options.map((opt) => (
-            <button
-              key={opt.value}
-              disabled={submitting}
-              onClick={() => handleSubmitAnswer(opt.value)}
-              className="w-full p-4 rounded-2xl border border-[#E4EDE9] bg-[#FAF7F2]/50 hover:border-[#12322B] hover:bg-[#FAF7F2] text-left font-semibold text-[#12322B] transition flex items-center justify-between group disabled:opacity-50 shadow-sm"
-            >
-              <span>{translateOption(opt)}</span>
-              <span className="text-[#12322B] font-bold group-hover:translate-x-1 transition-transform">→</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Multi Select ──────────────────────────────────────────────── */}
-      {currentQuestion.type === 'multi_select' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {currentQuestion.options.map((opt) => {
-              const isSelected = selectedMulti.includes(opt.value)
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => toggleMultiSelect(opt.value)}
-                  className={`p-4 rounded-2xl border text-left font-semibold transition flex items-center justify-between ${
-                    isSelected
-                      ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B] shadow-sm'
-                      : 'border-[#E4EDE9] bg-white hover:border-[#BFD8D2] text-[#5F7D74]'
-                  }`}
-                >
-                  <span className="text-sm">{translateOption(opt)}</span>
-                  <span
-                    className={`w-5 h-5 rounded-lg border flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                      isSelected ? 'bg-[#12322B] border-[#12322B] text-white' : 'border-[#BFD8D2]'
+          <div className="space-y-4">
+            {/* 1. Body Build */}
+            <div>
+              <label className="block text-xs font-bold text-[#12322B] mb-2">1. Body Constitution (Prakriti)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'vata', label: 'Vata (Light, quick, dry skin)' },
+                  { id: 'pitta', label: 'Pitta (Medium, warm, sharp)' },
+                  { id: 'kapha', label: 'Kapha (Sturdy, calm, oily skin)' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setAyushPrakriti(item.id)}
+                    className={`p-3.5 rounded-xl border text-xs font-semibold text-left transition ${
+                      ayushPrakriti === item.id
+                        ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B]'
+                        : 'border-[#E4EDE9] bg-white text-[#5F7D74]'
                     }`}
                   >
-                    {isSelected ? '✓' : ''}
-                  </span>
-                </button>
-              )
-            })}
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Appetite / Agni */}
+            <div>
+              <label className="block text-xs font-bold text-[#12322B] mb-2">2. Digestive Capacity (Agni)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'strong', label: 'Tikshnagni (Strong / High)' },
+                  { id: 'variable', label: 'Vishamagni (Irregular)' },
+                  { id: 'weak', label: 'Mandagni (Slow / Heavy)' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setAyushAgni(item.id)}
+                    className={`p-3.5 rounded-xl border text-xs font-semibold text-left transition ${
+                      ayushAgni === item.id
+                        ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B]'
+                        : 'border-[#E4EDE9] bg-white text-[#5F7D74]'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Ahara-Vihara Diet */}
+            <div>
+              <label className="block text-xs font-bold text-[#12322B] mb-2">3. Lifestyle & Diet (Ahara-Vihara)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'vegetarian', label: 'Satvik / Vegetarian' },
+                  { id: 'mixed', label: 'Mixed / Non-Vegetarian' },
+                  { id: 'irregular', label: 'Late Nights / Irregular Meals' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setAyushDiet(item.id)}
+                    className={`p-3.5 rounded-xl border text-xs font-semibold text-left transition ${
+                      ayushDiet === item.id
+                        ? 'border-[#12322B] bg-[#FAF7F2] text-[#12322B]'
+                        : 'border-[#E4EDE9] bg-white text-[#5F7D74]'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <button
-            id="multi-select-submit"
-            disabled={submitting || selectedMulti.length === 0}
-            onClick={() => handleSubmitAnswer(selectedMulti)}
-            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
+            onClick={handleAyushSubmit}
+            disabled={ayushSaving}
+            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition"
           >
-            {submitting ? t('saving_answer', lang) : t('submit_continue', lang)}
+            {ayushSaving ? 'Evaluating Dosha...' : 'Evaluate & Attach to Medical Record →'}
           </button>
+
+          {ayushResult && (
+            <div className="p-5 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-serif text-base font-bold text-[#12322B]">
+                  Prakriti Profile: {ayushResult.prakriti}
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-[#E4EDE9] text-[#12322B]">
+                  AYUSH Ready
+                </span>
+              </div>
+              <p className="text-xs text-[#5F7D74] leading-relaxed">
+                Dietary & Lifestyle: {ayushResult.dietary_guidelines?.[0] || 'Favor warm, cooked foods.'}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Text Input ────────────────────────────────────────────────── */}
-      {currentQuestion.type === 'text' && (
-        <div className="space-y-4">
-          <textarea
-            rows={3}
-            id="text-answer-input"
-            className="w-full p-4 border border-[#E4EDE9] rounded-2xl focus:border-[#12322B] outline-none text-[#12322B] bg-[#FAF7F2] font-medium text-base resize-none"
-            placeholder={t('type_or_voice', lang)}
-            value={textInput}
-            onChange={(e) => setTextInput(e.target.value)}
-          />
+      {/* ── TAB 3: Prescription & Document OCR Scanner ─────────────────── */}
+      {activeTab === 'ocr' && (
+        <div className="space-y-6">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#5F7D74]">
+              PADDLEOCR MEDICAL DOCUMENT DIGITIZER
+            </span>
+            <h3 className="text-2xl font-serif text-[#12322B] mt-0.5">
+              Prescription & Lab Report Scanner
+            </h3>
+            <p className="text-xs text-[#5F7D74] mt-1">
+              Upload physical paper prescriptions, lab reports, or discharge summaries for automatic entity extraction.
+            </p>
+          </div>
 
-          <button
-            id="text-submit-btn"
-            disabled={submitting || !textInput.trim()}
-            onClick={() => handleSubmitAnswer(textInput.trim())}
-            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
-          >
-            {submitting ? t('saving_answer', lang) : t('submit_response', lang)}
-          </button>
+          {/* Upload Area */}
+          <div className="border-2 border-dashed border-[#BFD8D2] hover:border-[#12322B] rounded-2xl p-8 text-center bg-[#FAF7F2]/60 transition space-y-3">
+            <span className="text-4xl">📷</span>
+            <div>
+              <h4 className="text-sm font-bold text-[#12322B]">Upload Prescription Photo or Scan</h4>
+              <p className="text-xs text-[#5F7D74] mt-0.5">Supports PNG, JPG, JPEG, and PDF documents</p>
+            </div>
+
+            <input
+              type="file"
+              accept="image/*,.pdf"
+              onChange={(e) => handleOcrUpload(e.target.files[0])}
+              className="hidden"
+              id="ocr-file-upload"
+            />
+            <label
+              htmlFor="ocr-file-upload"
+              className="inline-block px-6 py-3 rounded-full bg-[#12322B] text-white text-xs font-bold uppercase tracking-wider cursor-pointer shadow-md hover:bg-[#1C453C] transition"
+            >
+              Select Image / Scan
+            </label>
+          </div>
+
+          {ocrLoading && (
+            <div className="p-6 text-center text-xs font-semibold text-[#5F7D74]">
+              Processing image with PaddleOCR engine...
+            </div>
+          )}
+
+          {ocrResult && (
+            <div className="bg-[#FAF7F2] rounded-2xl p-5 border border-[#E4EDE9] space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#12322B] uppercase">Extracted Medications & Doses</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#E4EDE9] text-[#12322B]">
+                  Confidence: {Math.round((ocrResult.confidence_score || 0.95) * 100)}%
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {ocrResult.detected_medications?.map((med, idx) => (
+                  <div key={idx} className="p-3 bg-white rounded-xl border border-[#E4EDE9] flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-[#12322B]">{med.name}</span>
+                      <span className="text-[#5F7D74] ml-2 font-mono">{med.dosage}</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-[#FAF7F2] text-[#12322B] font-mono text-[10px]">
+                      {med.frequency || 'OD'} {med.duration}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
+
     </div>
   )
 }

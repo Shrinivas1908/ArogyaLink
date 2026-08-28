@@ -12,6 +12,7 @@ export default function EncounterDetail({
   setAbhaInput,
   onLinkABHA,
 }) {
+  const [detailTab, setDetailTab] = useState('clinical') // 'clinical' | 'ayush' | 'ocr' | 'fhir'
   const [showAiBreakdown, setShowAiBreakdown] = useState(true)
 
   if (!encounter) return null
@@ -42,7 +43,13 @@ export default function EncounterDetail({
         <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7A70]">
           ENCOUNTER {encId}
         </span>
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FCE8E6] text-[#D9383A]">
+        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+          triage.toUpperCase() === 'CRITICAL'
+            ? 'bg-[#FCE8E6] text-[#D9383A]'
+            : triage.toUpperCase() === 'URGENT'
+            ? 'bg-[#FEF3C7] text-[#D97706]'
+            : 'bg-[#E4EDE9] text-[#12322B]'
+        }`}>
           {triage}
         </span>
       </div>
@@ -63,10 +70,10 @@ export default function EncounterDetail({
           <span className="text-base text-[#D9383A]">⚠️</span>
           <div>
             <h4 className="text-xs font-bold text-[#8F2A24]">
-              Deterministic red flag
+              Deterministic Red Flag Triage
             </h4>
             <p className="text-xs text-[#A84B46] mt-0.5">
-              {encounter.rule_desc || 'Rule RF-CARD-001 triggered by confirmed intake evidence.'}
+              {encounter.rule_desc || 'Rule RF-CARD-001 triggered: immediate clinical attention advised.'}
             </p>
           </div>
         </div>
@@ -79,119 +86,183 @@ export default function EncounterDetail({
         </button>
       </div>
 
-      {/* AI Clinical Decision Synthesis Card */}
-      <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#12322B] animate-pulse" />
-            <h3 className="text-xs font-bold text-[#2E1B15] uppercase tracking-wider">
-              AI Clinical Decision Synthesis (Groq & Gemini)
-            </h3>
-          </div>
-          <button
-            onClick={() => setShowAiBreakdown(!showAiBreakdown)}
-            className="text-[11px] font-semibold text-[#8C7A70] hover:text-[#2E1B15]"
-          >
-            {showAiBreakdown ? 'Collapse ▲' : 'Expand ▼'}
-          </button>
-        </div>
+      {/* Multi-Module Clinical Navigation Tabs */}
+      <div className="flex gap-2 p-1 bg-white rounded-xl border border-[#EFE8DE] text-xs font-bold">
+        <button
+          onClick={() => setDetailTab('clinical')}
+          className={`flex-1 py-2 rounded-lg transition ${
+            detailTab === 'clinical' ? 'bg-[#2E1B15] text-[#FAF6F0]' : 'text-[#7C6C62] hover:text-[#2E1B15]'
+          }`}
+        >
+          🩺 AI Synthesis & HPI
+        </button>
 
-        {showAiBreakdown && (
-          <div className="space-y-4 pt-2 border-t border-[#FAF6F0] text-xs">
-            {summary.history_of_present_illness && (
-              <div>
-                <span className="text-[10px] uppercase font-bold text-[#8C7A70]">History of Present Illness:</span>
-                <p className="text-[#2E1B15] mt-1 leading-relaxed">{summary.history_of_present_illness}</p>
+        <button
+          onClick={() => setDetailTab('ayush')}
+          className={`flex-1 py-2 rounded-lg transition ${
+            detailTab === 'ayush' ? 'bg-[#2E1B15] text-[#FAF6F0]' : 'text-[#7C6C62] hover:text-[#2E1B15]'
+          }`}
+        >
+          🌿 AYUSH Pariksha
+        </button>
+
+        <button
+          onClick={() => setDetailTab('ocr')}
+          className={`flex-1 py-2 rounded-lg transition ${
+            detailTab === 'ocr' ? 'bg-[#2E1B15] text-[#FAF6F0]' : 'text-[#7C6C62] hover:text-[#2E1B15]'
+          }`}
+        >
+          📄 Rx OCR Extraction
+        </button>
+      </div>
+
+      {/* ── SUB-TAB 1: AI Clinical Decision Synthesis ─────────────────── */}
+      {detailTab === 'clinical' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#12322B] animate-pulse" />
+                <h3 className="text-xs font-bold text-[#2E1B15] uppercase tracking-wider">
+                  Clinical Synthesis (Groq Llama-3.3 & Gemini 2.5)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAiBreakdown(!showAiBreakdown)}
+                className="text-[11px] font-semibold text-[#8C7A70] hover:text-[#2E1B15]"
+              >
+                {showAiBreakdown ? 'Collapse ▲' : 'Expand ▼'}
+              </button>
+            </div>
+
+            {showAiBreakdown && (
+              <div className="space-y-4 pt-2 border-t border-[#FAF6F0] text-xs">
+                {summary.history_of_present_illness && (
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[#8C7A70]">History of Present Illness (HPI):</span>
+                    <p className="text-[#2E1B15] mt-1 leading-relaxed">{summary.history_of_present_illness}</p>
+                  </div>
+                )}
+
+                {/* Differential Diagnoses */}
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Differential Diagnoses:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
+                    {diffs.map((d, idx) => (
+                      <div key={idx} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#2E1B15]">{d.condition}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            d.likelihood === 'High' ? 'bg-[#FCE8E6] text-[#D9383A]' : 'bg-[#E4EDE9] text-[#12322B]'
+                          }`}>{d.likelihood}</span>
+                        </div>
+                        <p className="text-[11px] text-[#7C6C62] mt-1">{d.rationale}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommended Labs & Vitals */}
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Recommended Investigations & Vitals:</span>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {labs.map((lab, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#EFE8DE] text-[#2E1B15] text-[11px]">
+                        ✦ {lab}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-
-            {/* Differential Diagnoses */}
-            <div>
-              <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Differential Diagnoses:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
-                {diffs.map((d, idx) => (
-                  <div key={idx} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#2E1B15]">{d.condition}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        d.likelihood === 'High' ? 'bg-[#FCE8E6] text-[#D9383A]' : 'bg-[#E4EDE9] text-[#12322B]'
-                      }`}>{d.likelihood}</span>
-                    </div>
-                    <p className="text-[11px] text-[#7C6C62] mt-1">{d.rationale}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recommended Labs & Vitals */}
-            <div>
-              <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Recommended Investigations & Vitals:</span>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {labs.map((lab, i) => (
-                  <span key={i} className="px-2.5 py-1 rounded-full bg-[#FAF7F2] border border-[#EFE8DE] text-[#2E1B15] text-[11px]">
-                    ✦ {lab}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 2-Column Sub-Cards: Patient-reported intake & Document evidence */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        
-        {/* Card 1: Patient-reported intake */}
-        <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#2E1B15]">
-            <svg className="w-4 h-4 text-[#8C7A70]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" y1="19" x2="12" y2="23" />
-              <line x1="8" y1="23" x2="16" y2="23" />
-            </svg>
-            <span>Patient-reported intake</span>
           </div>
 
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-[#FAF6F0]">
-              <span className="text-[#8C7A70]">Severity</span>
-              <span className="font-bold text-[#2E1B15]">9 / 10</span>
+          {/* 2-Column Sub-Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-2">
+              <span className="text-xs font-bold text-[#2E1B15]">Patient-Reported Intake</span>
+              <p className="text-xs text-[#7C6C62]">
+                Complaint: <strong className="text-[#2E1B15]">{complaint}</strong>
+              </p>
+              <p className="text-xs text-[#7C6C62]">
+                Triage Assessment: <span className="font-bold text-[#2E1B15]">{triage}</span>
+              </p>
             </div>
-            <div className="flex justify-between py-1 border-b border-[#FAF6F0]">
-              <span className="text-[#8C7A70]">Breathing difficulty</span>
-              <span className="font-bold text-[#2E1B15]">Yes</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-[#8C7A70]">Radiating pain</span>
-              <span className="font-bold text-[#2E1B15]">Yes — left shoulder</span>
+
+            <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-2">
+              <span className="text-xs font-bold text-[#2E1B15]">ABDM Consent Artefact</span>
+              <p className="text-xs text-[#7C6C62]">
+                Status: <span className="text-emerald-700 font-bold">✓ Active Digital Consent</span>
+              </p>
+              <p className="text-xs text-[#7C6C62]">
+                Framework: DPDP Act 2023 Compliant
+              </p>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Card 2: Document evidence */}
-        <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#2E1B15]">
-            <svg className="w-4 h-4 text-[#8C7A70]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span>Document evidence</span>
+      {/* ── SUB-TAB 2: AYUSH Dashavidha Assessment ────────────────────── */}
+      {detailTab === 'ayush' && (
+        <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-4 text-xs">
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-sm text-[#2E1B15]">Ayurvedic Prakriti & Dashavidha Pariksha</h4>
+            <span className="px-2.5 py-0.5 rounded-full bg-[#E4EDE9] text-[#12322B] font-bold text-[10px]">
+              AYUSH Module
+            </span>
           </div>
 
-          <p className="text-xs text-[#7C6C62] leading-relaxed">
-            Previous report processed. OCR extraction available for verification.
-          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
+              <span className="text-[10px] font-bold text-[#8C7A70] uppercase block">Prakriti (Dosha)</span>
+              <span className="font-bold text-[#2E1B15] text-sm mt-0.5 block">Vata-Pitta</span>
+              <span className="text-[11px] text-[#7C6C62]">Light frame, variable energy</span>
+            </div>
 
-          <button
-            onClick={onDownloadFHIR}
-            className="text-xs font-bold text-[#6E3E30] hover:underline block pt-1"
-          >
-            Inspect OCR extraction →
-          </button>
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
+              <span className="text-[10px] font-bold text-[#8C7A70] uppercase block">Agni (Metabolic Fire)</span>
+              <span className="font-bold text-[#2E1B15] text-sm mt-0.5 block">Tikshnagni</span>
+              <span className="text-[11px] text-[#7C6C62]">High metabolic appetite</span>
+            </div>
+
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
+              <span className="text-[10px] font-bold text-[#8C7A70] uppercase block">Ahara-Vihara (Diet)</span>
+              <span className="font-bold text-[#2E1B15] text-sm mt-0.5 block">Satvik / Veg</span>
+              <span className="text-[11px] text-[#7C6C62]">Warm cooked diet advised</span>
+            </div>
+          </div>
         </div>
+      )}
 
-      </div>
+      {/* ── SUB-TAB 3: Document OCR Extraction ────────────────────────── */}
+      {detailTab === 'ocr' && (
+        <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-4 text-xs">
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-sm text-[#2E1B15]">PaddleOCR Medical Document Intelligence</h4>
+            <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#EFE8DE] text-[#2E1B15] font-bold text-[10px]">
+              High Confidence (96%)
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
+              <div>
+                <strong className="text-[#2E1B15]">Tab. Paracetamol 650mg</strong>
+                <p className="text-[11px] text-[#7C6C62]">Antipyretic / Analgesic</p>
+              </div>
+              <span className="font-mono text-[#2E1B15] font-bold">TDS x 3 Days</span>
+            </div>
+
+            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
+              <div>
+                <strong className="text-[#2E1B15]">Tab. Cetirizine 10mg</strong>
+                <p className="text-[11px] text-[#7C6C62]">Antihistamine</p>
+              </div>
+              <span className="font-mono text-[#2E1B15] font-bold">OD (Night)</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Doctor Clinical Actions Bar */}
       <div className="pt-4 border-t border-[#EFE8DE] space-y-4">

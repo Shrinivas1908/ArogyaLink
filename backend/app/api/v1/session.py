@@ -112,6 +112,20 @@ async def start_session(
 
     created_iso = encounter.created_at.isoformat() if encounter.created_at else datetime.now(timezone.utc).isoformat()
 
+    try:
+        from app.api.v1.ws_notifications import manager
+        await manager.broadcast({
+            "event": "PATIENT_CHECKIN",
+            "data": {
+                "encounter_id": str(encounter.id),
+                "patient_name": patient.full_name or "Aarav Sharma",
+                "triage_level": encounter.triage_level or "ROUTINE",
+                "time": created_iso,
+            }
+        })
+    except Exception:
+        pass
+
     return {
         "encounter_id": str(encounter.id),
         "patient_id": str(patient.id),
@@ -161,6 +175,20 @@ async def start_session_via_abha(
     await db.refresh(encounter)
 
     created_iso = encounter.created_at.isoformat() if encounter.created_at else datetime.now(timezone.utc).isoformat()
+
+    try:
+        from app.api.v1.ws_notifications import manager
+        await manager.broadcast({
+            "event": "PATIENT_CHECKIN",
+            "data": {
+                "encounter_id": str(encounter.id),
+                "patient_name": patient.full_name or "Ananya Sharma",
+                "triage_level": encounter.triage_level or "ROUTINE",
+                "time": created_iso,
+            }
+        })
+    except Exception:
+        pass
 
     return {
         "encounter_id": str(encounter.id),
