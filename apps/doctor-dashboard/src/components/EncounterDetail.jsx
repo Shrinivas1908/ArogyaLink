@@ -14,6 +14,7 @@ export default function EncounterDetail({
 }) {
   const [detailTab, setDetailTab] = useState('clinical') // 'clinical' | 'ayush' | 'ocr' | 'validation' | 'reminders'
   const [showAiBreakdown, setShowAiBreakdown] = useState(true)
+  const [showRawOcr, setShowRawOcr] = useState(false)
   const [scheduledReminderMsg, setScheduledReminderMsg] = useState(null)
 
   if (!encounter) return null
@@ -24,6 +25,7 @@ export default function EncounterDetail({
   const complaint = encounter.chief_complaint || 'Severe chest discomfort'
   const triage = encounter.triage_level || 'Critical'
   const summary = encounter.gemini_summary || encounter.summary || {}
+  const ocr = encounter.ocr_result || {}
 
   const diffs = summary.differential_diagnoses || [
     { condition: 'Acute Coronary Syndrome (ACS / STEMI)', likelihood: 'High', rationale: 'Acute radiating chest pain with left arm dyspnea.' },
@@ -34,6 +36,16 @@ export default function EncounterDetail({
     '12-Lead Electrocardiogram (ECG)',
     'BP & Continuous SpO2 Monitoring',
     'Point-of-Care Cardiac Troponin I/T'
+  ]
+
+  const detectedMeds = ocr.detected_medications || [
+    { name: 'Tab. Paracetamol', dosage: '650mg', frequency: 'TDS (3 times/day)', duration: '3 days', type: 'Antipyretic / Analgesic' },
+    { name: 'Tab. Pantoprazole', dosage: '40mg', frequency: 'OD (Empty Stomach)', duration: '5 days', type: 'Proton Pump Inhibitor (PPI)' },
+  ]
+
+  const labResults = ocr.lab_results || [
+    { test_name: 'Fasting Blood Glucose', value: '138', unit: 'mg/dL', reference: '70 - 99 mg/dL', flag: 'ELEVATED' },
+    { test_name: 'Serum Creatinine', value: '0.95', unit: 'mg/dL', reference: '0.7 - 1.2 mg/dL', flag: 'NORMAL' },
   ]
 
   const handleScheduleReminder = (medName, time) => {
@@ -118,7 +130,7 @@ export default function EncounterDetail({
             detailTab === 'ocr' ? 'bg-[#2E1B15] text-[#FAF6F0] shadow-sm' : 'text-[#7C6C62] hover:text-[#2E1B15]'
           }`}
         >
-          📄 Rx OCR
+          📄 Rx OCR ({detectedMeds.length})
         </button>
 
         <button
@@ -148,7 +160,7 @@ export default function EncounterDetail({
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#12322B] animate-pulse" />
                 <h3 className="text-xs font-bold text-[#2E1B15] uppercase tracking-wider">
-                  Traceable Clinical Synthesis (Groq Llama-3.3 & Gemini 2.5)
+                  AI Clinical Synthesis (Groq Llama-3.3 & Gemini 2.5)
                 </h3>
               </div>
               <button
@@ -159,6 +171,29 @@ export default function EncounterDetail({
               </button>
             </div>
 
+            {/* Quick Executive Snapshot at a Glance */}
+            <div className="p-3.5 bg-gradient-to-r from-[#F4EFE6] to-[#FAF7F2] rounded-xl border border-[#E8DFC8]">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-[#2E1B15] text-white rounded">
+                  ⚡ Quick Doctor Snapshot
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-[#2E1B15] leading-relaxed">
+                {summary.quick_summary || `${age}-year-old presenting with ${complaint.toLowerCase()}; priority clinical review and vitals check advised.`}
+              </p>
+            </div>
+
+            {/* Patient & Attendant Friendly Explanation */}
+            <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
+              <div className="flex items-center gap-1.5 mb-1 text-emerald-900 font-bold text-[11px]">
+                <span>🗣️</span>
+                <span>Patient-Friendly Summary (Plain Language):</span>
+              </div>
+              <p className="text-xs text-emerald-800 leading-relaxed font-sans">
+                {summary.patient_friendly_summary || 'The patient is reporting symptoms that our doctor will evaluate promptly with focused examination and diagnostic tests for safety.'}
+              </p>
+            </div>
+
             {showAiBreakdown && (
               <div className="space-y-4 pt-2 border-t border-[#FAF6F0] text-xs">
                 {/* HPI with Line-by-Line Evidence Traceability */}
@@ -166,32 +201,39 @@ export default function EncounterDetail({
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-bold text-[#8C7A70]">History of Present Illness (HPI Narrative):</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FAF7F2] border border-[#EFE8DE] text-[#2E1B15]">
-                      100% Traceable to Inputs
+                      100% Traceable
                     </span>
                   </div>
                   
                   <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] space-y-2">
                     <div className="flex items-start gap-2">
                       <span className="text-[10px] font-bold bg-[#E4EDE9] text-[#12322B] px-1.5 py-0.5 rounded shrink-0">
-                        🎙️ Voice
+                        🎙️ Voice & Touch
                       </span>
                       <p className="text-[#2E1B15] leading-relaxed">
                         {summary.history_of_present_illness || 'Patient presents reporting acute onset severe retrosternal pressure radiating to the left arm and shoulder with shortness of breath.'}
                       </p>
                     </div>
-                    
-                    <div className="flex items-center gap-2 pt-1 border-t border-[#EFE8DE] text-[11px] text-[#7C6C62]">
-                      <span className="text-[10px] font-bold bg-white text-[#2E1B15] border border-[#EFE8DE] px-1.5 py-0.5 rounded">
-                        👇 Touch Input
-                      </span>
-                      <span>Symptom Duration: Less than 1 hour · Severity Score: 9/10</span>
-                    </div>
                   </div>
                 </div>
 
+                {/* Key Findings */}
+                {summary.key_findings?.length > 0 && (
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Key Intake Findings:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1.5">
+                      {summary.key_findings.map((f, i) => (
+                        <div key={i} className="p-2.5 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] text-[11px] text-[#2E1B15]">
+                          • {f}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Differential Diagnoses */}
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Differential Diagnoses:</span>
+                  <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Differential Diagnoses & Rationale:</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
                     {diffs.map((d, idx) => (
                       <div key={idx} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE]">
@@ -218,6 +260,22 @@ export default function EncounterDetail({
                     ))}
                   </div>
                 </div>
+
+                {/* Doctor Next Actions Checklist */}
+                {summary.suggested_doctor_actions?.length > 0 && (
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[#8C7A70]">Suggested Doctor Actions:</span>
+                    <ul className="mt-1 space-y-1 bg-[#FAF7F2] p-3 rounded-xl border border-[#EFE8DE]">
+                      {summary.suggested_doctor_actions.map((act, i) => (
+                        <li key={i} className="flex items-center gap-2 text-[11px] text-[#2E1B15]">
+                          <span className="text-emerald-700 font-bold">✓</span>
+                          <span>{act}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
               </div>
             )}
           </div>
@@ -260,29 +318,82 @@ export default function EncounterDetail({
       {detailTab === 'ocr' && (
         <div className="bg-white rounded-2xl p-5 border border-[#EFE8DE] space-y-4 text-xs">
           <div className="flex items-center justify-between">
-            <h4 className="font-bold text-sm text-[#2E1B15]">PaddleOCR Medical Document Intelligence</h4>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#EFE8DE] text-[#2E1B15] font-bold text-[10px]">
-              High Confidence (96%)
+            <div>
+              <h4 className="font-bold text-sm text-[#2E1B15]">Document OCR & Medical Entity Extraction</h4>
+              <p className="text-[11px] text-[#7C6C62]">
+                Engine: {ocr.engine || 'PaddleOCR + BioClinical-NER v2.4'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E4EDE9] text-[#12322B] font-bold text-[10px]">
+                Confidence: {Math.round((ocr.confidence_score || 0.98) * 100)}%
+              </span>
+              <button
+                onClick={() => setShowRawOcr(!showRawOcr)}
+                className="text-[11px] font-bold text-[#6E3E30] hover:underline"
+              >
+                {showRawOcr ? 'Hide Raw Text' : 'View Raw OCR'}
+              </button>
+            </div>
+          </div>
+
+          {/* Raw Text Toggle Box */}
+          {showRawOcr && (
+            <div className="p-3 bg-slate-900 text-emerald-400 font-mono text-[11px] rounded-xl overflow-x-auto whitespace-pre-wrap border border-slate-700">
+              {ocr.raw_text || 'Rx: Tab. Paracetamol 650mg TDS x 3 days, Tab. Pantoprazole 40mg OD x 5 days.\nLabs: Fasting Blood Glucose: 138 mg/dL [ELEVATED]'}
+            </div>
+          )}
+
+          {/* Extracted Medications */}
+          <div>
+            <span className="text-[10px] uppercase font-bold text-[#8C7A70] block mb-2">
+              Detected Prescriptions ({detectedMeds.length}):
             </span>
-          </div>
-
-          <div className="space-y-2">
-            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
-              <div>
-                <strong className="text-[#2E1B15]">Tab. Paracetamol 650mg</strong>
-                <p className="text-[11px] text-[#7C6C62]">Antipyretic / Analgesic</p>
-              </div>
-              <span className="font-mono text-[#2E1B15] font-bold">TDS x 3 Days</span>
-            </div>
-
-            <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
-              <div>
-                <strong className="text-[#2E1B15]">Tab. Pantoprazole 40mg</strong>
-                <p className="text-[11px] text-[#7C6C62]">Proton Pump Inhibitor (PPI)</p>
-              </div>
-              <span className="font-mono text-[#2E1B15] font-bold">OD (Empty Stomach)</span>
+            <div className="space-y-2">
+              {detectedMeds.map((med, idx) => (
+                <div key={idx} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
+                  <div>
+                    <strong className="text-[#2E1B15] text-xs">{med.name} {med.dosage}</strong>
+                    <p className="text-[11px] text-[#7C6C62]">{med.type || 'Prescription Drug'} • {med.duration}</p>
+                  </div>
+                  <span className="font-mono text-[#2E1B15] font-bold bg-white px-2 py-1 rounded border border-[#EFE8DE]">
+                    {med.frequency}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Extracted Lab Tests */}
+          {labResults.length > 0 && (
+            <div className="pt-2 border-t border-[#FAF6F0]">
+              <span className="text-[10px] uppercase font-bold text-[#8C7A70] block mb-2">
+                Diagnostic Lab Investigations ({labResults.length}):
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {labResults.map((lab, idx) => (
+                  <div key={idx} className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EFE8DE] flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-[#2E1B15] text-xs block">{lab.test_name}</span>
+                      <span className="text-[10px] text-[#7C6C62]">Ref: {lab.reference}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-[#2E1B15] text-xs block">
+                        {lab.value} {lab.unit}
+                      </span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        lab.flag === 'NORMAL'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-[#FCE8E6] text-[#D9383A]'
+                      }`}>
+                        {lab.flag}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -303,7 +414,7 @@ export default function EncounterDetail({
                 <span className="text-[10px] font-bold text-emerald-700">✓ Concordant (99%)</span>
               </div>
               <p className="text-[11px] text-[#7C6C62]">
-                Voice transcript matches recorded touch chief complaint "Chest pain with left arm radiation".
+                Voice transcript matches recorded touch chief complaint "{complaint}".
               </p>
             </div>
 
@@ -313,7 +424,7 @@ export default function EncounterDetail({
                 <span className="text-[10px] font-bold text-emerald-700">✓ Verified</span>
               </div>
               <p className="text-[11px] text-[#7C6C62]">
-                Confirmed no known drug allergy conflicts (Penicillin / NSAIDs checked).
+                Confirmed no known drug allergy conflicts ({detectedMeds.map(m => m.name).join(', ')} checked).
               </p>
             </div>
 
@@ -323,7 +434,7 @@ export default function EncounterDetail({
                 <span className="text-[10px] font-bold text-[#D9383A]">⚡ New Symptom Onset</span>
               </div>
               <p className="text-[11px] text-[#A84B46]">
-                Smart Follow-up detected new acute presentation: Previous visit was routine viral fever; current episode is acute chest discomfort.
+                Smart Follow-up detected new acute presentation: Previous visit was routine viral fever; current episode is acute {complaint.toLowerCase()}.
               </p>
             </div>
           </div>

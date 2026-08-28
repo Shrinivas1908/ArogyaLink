@@ -21,10 +21,12 @@ from app.engines.question_engine import QuestionEngine
 from app.integrations.gemini_client import GeminiClient
 from app.models.patient import Consent, Encounter, Patient
 from app.models.intake import Answer
+from app.services.ocr_service import OCRService
 
 router = APIRouter(prefix="/queue", tags=["doctor_queue"])
 q_engine = QuestionEngine()
 gemini_client = GeminiClient()
+ocr_service = OCRService()
 
 
 class EncounterQueueItem(BaseModel):
@@ -57,6 +59,7 @@ class ClinicalReviewBundle(BaseModel):
     consent_version: str | None = None
     answers: dict[str, Any]
     summary: dict[str, Any] | None = None
+    ocr_result: dict[str, Any] | None = None
     created_at: str
 
 
@@ -158,6 +161,7 @@ async def get_portal_encounter_bundle(
 
 
 async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[str, Any]:
+    cached_ocr = ocr_service.get_encounter_ocr(encounter_id)
     try:
         enc_uuid = uuid.UUID(encounter_id)
     except ValueError:
@@ -189,10 +193,25 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
                 "q_associated_symptoms": ["shortness_of_breath", "sweating"],
             },
             "summary": {
+                "quick_summary": "54-year-old female with acute severe chest discomfort and left arm radiation; immediate ECG & cardiac workup required.",
+                "patient_friendly_summary": "You are experiencing acute chest pain that needs an immediate evaluation with our clinical team and an ECG test to safeguard your heart.",
                 "chief_complaint": "Acute retrosternal chest pain with left shoulder radiation.",
                 "duration": "1 hour",
-                "severity": "Severe / Critical",
+                "severity": "Critical",
                 "history_of_present_illness": "54-year-old female presents with acute onset severe retrosternal pressure radiating to the left arm and shoulder, accompanied by shortness of breath and diaphoresis.",
+                "key_findings": [
+                    "Acute radiating retrosternal pain",
+                    "Onset < 1 hour with dyspnea",
+                    "Triage Priority: Critical",
+                ],
+                "active_medications_and_labs": [
+                    "Tab. Paracetamol 650mg TDS x 3 Days",
+                    "Tab. Pantoprazole 40mg OD (Empty Stomach)",
+                ],
+                "potential_risk_factors": [
+                    "Acute ischemic cardiac compromise risk",
+                    "Continuous vitals & SpO2 monitoring required",
+                ],
                 "differential_diagnoses": [
                     {"condition": "Acute Coronary Syndrome (ACS / STEMI)", "likelihood": "High", "rationale": "Classic radiating pain pattern with autonomic symptoms."},
                     {"condition": "Acute Aortic Dissection", "likelihood": "Moderate", "rationale": "Must rule out in tearing retrosternal pain."},
@@ -209,6 +228,21 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
                     "Establish IV access and initiate oxygen therapy if SpO2 < 90%",
                     "Consult Cardiology for emergency catheterization review"
                 ]
+            },
+            "ocr_result": cached_ocr or {
+                "status": "success",
+                "document_id": "DOC-MED-491A0B2C",
+                "document_type": "Medical Prescription & Investigation Record",
+                "confidence_score": 0.98,
+                "detected_medications": [
+                    {"name": "Tab. Paracetamol", "dosage": "650mg", "frequency": "TDS (3 times/day)", "duration": "3 days", "type": "Antipyretic / Analgesic"},
+                    {"name": "Tab. Pantoprazole", "dosage": "40mg", "frequency": "OD (Empty stomach)", "duration": "5 days", "type": "Proton Pump Inhibitor (PPI)"},
+                ],
+                "lab_results": [
+                    {"test_name": "Fasting Blood Glucose", "value": "138", "unit": "mg/dL", "reference": "70 - 99 mg/dL", "flag": "ELEVATED"},
+                    {"test_name": "Serum Creatinine", "value": "0.95", "unit": "mg/dL", "reference": "0.7 - 1.2 mg/dL", "flag": "NORMAL"},
+                ],
+                "raw_text": "Rx: Tab. Paracetamol 650mg TDS x 3 days, Tab. Pantoprazole 40mg OD x 5 days.\nLabs: Fasting Blood Glucose: 138 mg/dL [ELEVATED]",
             },
             "created_at": "2026-08-28T11:00:00Z",
         }
@@ -233,8 +267,14 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
     else:
         complaint_str = "Severe chest discomfort" if enc.triage_level == "CRITICAL" else "Clinical Intake Review"
 
-    # Generate clinical summary
-    clinical_summary = gemini_client.generate_clinical_summary(answers)
+    # Generate clinical summary linked with OCR
+    ocr_text = cached_ocr.get("raw_text") if cached_ocr else None
+    ocr_meds = cached_ocr.get("detected_medications") if cached_ocr else None
+    clinical_summary = gemini_client.generate_clinical_summary(
+        intake_answers=answers,
+        ocr_text=ocr_text,
+        ocr_medications=ocr_meds,
+    )
 
     return {
         "encounter_id": str(enc.id),
@@ -251,5 +291,6 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
         "consent_version": enc.consent.consent_version if enc.consent else None,
         "answers": answers,
         "summary": clinical_summary,
+        "ocr_result": cached_ocr,
         "created_at": enc.created_at.isoformat() if enc.created_at else "",
     }

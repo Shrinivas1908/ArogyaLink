@@ -27,5 +27,25 @@ async def process_document_ocr(
     """Upload prescription image or PDF for medical OCR extraction."""
     await validate_consented_encounter(encounter_id, db)
     file_bytes = await file.read()
-    result = ocr_service.process_prescription(encounter_id, file_bytes)
+    filename = file.filename or ""
+    result = ocr_service.process_prescription(encounter_id, file_bytes, filename=filename)
+    return result
+
+
+@router.get("/encounter/{encounter_id}")
+async def get_encounter_ocr_result(
+    encounter_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Retrieve extracted OCR prescription data for an encounter."""
+    await validate_consented_encounter(encounter_id, db)
+    result = ocr_service.get_encounter_ocr(encounter_id)
+    if not result:
+        return {
+            "status": "not_uploaded",
+            "encounter_id": encounter_id,
+            "detected_medications": [],
+            "lab_results": [],
+            "raw_text": "",
+        }
     return result

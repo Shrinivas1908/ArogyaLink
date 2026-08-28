@@ -353,6 +353,30 @@ export default function InteractiveDoctorWorkspace() {
                     </span>
                   </div>
 
+                  {/* Quick Doctor Snapshot */}
+                  {selectedEncounter.gemini_summary.quick_summary && (
+                    <div className="p-3 bg-white/90 rounded-xl border border-sky-200">
+                      <span className="text-[10px] font-extrabold uppercase text-sky-900 block mb-0.5">
+                        ⚡ Quick Doctor Snapshot:
+                      </span>
+                      <p className="text-xs font-bold text-slate-800">
+                        {selectedEncounter.gemini_summary.quick_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Patient-Friendly Explanation */}
+                  {selectedEncounter.gemini_summary.patient_friendly_summary && (
+                    <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200">
+                      <span className="text-[10px] font-extrabold uppercase text-emerald-900 block mb-0.5">
+                        🗣️ Patient-Friendly Explanation:
+                      </span>
+                      <p className="text-xs text-emerald-800">
+                        {selectedEncounter.gemini_summary.patient_friendly_summary}
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-sm font-bold text-slate-900">
                     {selectedEncounter.gemini_summary.chief_complaint}
                   </p>
