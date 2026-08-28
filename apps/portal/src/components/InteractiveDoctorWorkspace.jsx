@@ -35,27 +35,47 @@ export default function InteractiveDoctorWorkspace() {
     return () => clearInterval(interval)
   }, [])
 
-  // 2. Connect WebSocket for Real-Time Escalations
+  // 2. Connect WebSocket for Real-Time Escalations with keepalive
   useEffect(() => {
-    let ws
+    let ws = null
+    let pingInterval = null
+
     try {
-      ws = new WebSocket('ws://127.0.0.1:8000/ws/notifications')
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const host = window.location.hostname || '127.0.0.1'
+      ws = new WebSocket(`${protocol}//${host}:8000/ws/notifications`)
+
+      ws.onopen = () => {
+        pingInterval = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send('ping')
+          }
+        }, 15000)
+      }
+
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
+          if (msg.type === 'pong') return
+          fetchQueue()
           if (msg.event === 'CRITICAL_ESCALATION') {
             setEscalationAlert(msg.data)
-            fetchQueue()
           }
         } catch (err) {
-          console.error('WS JSON parse error:', err)
+          console.warn('WS parse notice:', err)
         }
       }
+
+      ws.onerror = () => {}
     } catch (e) {
-      console.warn('WebSocket connection warning:', e)
+      console.warn('WebSocket init warning:', e)
     }
+
     return () => {
-      if (ws) ws.close()
+      if (pingInterval) clearInterval(pingInterval)
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        ws.close()
+      }
     }
   }, [])
 

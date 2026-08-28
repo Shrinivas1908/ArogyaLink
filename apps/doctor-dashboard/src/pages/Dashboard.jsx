@@ -98,27 +98,62 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  // 2. Real-time WebSocket connection with safe cleanup
+  // 2. Real-time WebSocket connection with safe cleanup & keepalive
   useEffect(() => {
     let ws = null
-    try {
-      ws = new WebSocket('ws://127.0.0.1:8000/ws/notifications')
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-          fetchQueue()
-          if (msg.event === 'CRITICAL_ESCALATION') {
-            setEscalationAlert({
-              encounter_id: msg.data.encounter_id || 'AL-2048',
-              patient_name: msg.data.patient_name || 'Ananya Sharma',
-              symptoms: msg.data.symptoms || 'Severe discomfort + breathing difficulty + radiating pain.',
-            })
-            setShowToast(true)
-          }
-        } catch {}
+    let pingInterval = null
+    let reconnectTimeout = null
+
+    const connectWS = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const host = window.location.hostname || '127.0.0.1'
+        ws = new WebSocket(`${protocol}//${host}:8000/ws/notifications`)
+
+        ws.onopen = () => {
+          // Send keepalive ping every 15 seconds to keep socket active
+          pingInterval = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send('ping')
+            }
+          }, 15000)
+        }
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data)
+            if (msg.type === 'pong') return
+            fetchQueue()
+            if (msg.event === 'CRITICAL_ESCALATION') {
+              setEscalationAlert({
+                encounter_id: msg.data?.encounter_id || 'AL-2048',
+                patient_name: msg.data?.patient_name || 'Ananya Sharma',
+                symptoms: msg.data?.symptoms || 'Severe discomfort + breathing difficulty + radiating pain.',
+              })
+              setShowToast(true)
+            }
+          } catch {}
+        }
+
+        ws.onerror = () => {
+          // Fallback gracefully without browser console error noise
+        }
+
+        ws.onclose = () => {
+          if (pingInterval) clearInterval(pingInterval)
+          // Attempt graceful reconnect after 5s
+          reconnectTimeout = setTimeout(connectWS, 5000)
+        }
+      } catch {
+        // Fallback gracefully
       }
-    } catch {}
+    }
+
+    connectWS()
+
     return () => {
+      if (pingInterval) clearInterval(pingInterval)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
       if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         ws.close()
       }
