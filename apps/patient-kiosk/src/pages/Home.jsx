@@ -16,9 +16,9 @@ export default function Home() {
   const [langMenuOpen, setLangMenuOpen] = useState(false)
 
   // Form & ABHA state
-  const [loginMode, setLoginMode] = useState('abha')
-  const [abhaInput, setAbhaInput] = useState('91-4820-9182-3491')
-  const [abhaPin, setAbhaPin] = useState('1234')
+  const [loginMode, setLoginMode] = useState('manual') // Default to direct Patient Name registration
+  const [abhaInput, setAbhaInput] = useState('')
+  const [abhaPin, setAbhaPin] = useState('')
   const [formData, setFormData] = useState({ fullName: '', age: '', gender: 'Male', phone: '' })
 
   // Session state
@@ -26,6 +26,10 @@ export default function Home() {
 
   const handleAbhaLogin = async (e) => {
     e.preventDefault()
+    if (!abhaInput.trim()) {
+      setError('Please enter your 14-digit ABHA ID or switch to Direct Registration.')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -33,23 +37,17 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          abha_id: abhaInput.trim() || '91-4820-9182-3491',
+          abha_id: abhaInput.trim(),
           pin: abhaPin.trim() || '1234',
           kiosk_id: 'kiosk-01',
         }),
       })
-      if (!res.ok) throw new Error('ABHA Login failed')
+      if (!res.ok) throw new Error('ABHA verification failed. Please check ID.')
       const data = await res.json()
       setSession(data)
       setStep('consent')
-    } catch {
-      setSession({
-        encounter_id: `AL-${Math.floor(1000 + Math.random() * 9000)}`,
-        patient_name: 'Ananya Sharma',
-        age: 54,
-        gender: 'Female',
-      })
-      setStep('consent')
+    } catch (err) {
+      setError(err.message || 'ABHA verification failed')
     } finally {
       setLoading(false)
     }
@@ -57,6 +55,17 @@ export default function Home() {
 
   const handleCreateSession = async (e) => {
     e.preventDefault()
+    const name = formData.fullName.trim()
+    if (!name) {
+      setError('Patient Full Name is required to start registration (मरीज़ का नाम अनिवार्य है).')
+      return
+    }
+    const parsedAge = parseInt(formData.age, 10)
+    if (!formData.age || isNaN(parsedAge) || parsedAge <= 0 || parsedAge > 125) {
+      setError('Please enter a valid patient age between 1 and 125.')
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -64,25 +73,22 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: formData.fullName.trim() || 'Patient',
-          age: formData.age ? parseInt(formData.age, 10) : 34,
-          gender: formData.gender,
+          full_name: name,
+          age: parsedAge,
+          gender: formData.gender || 'Male',
           phone: formData.phone.trim() || null,
           kiosk_id: 'kiosk-01',
         }),
       })
-      if (!res.ok) throw new Error('Failed to start session')
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Failed to start session on server')
+      }
       const data = await res.json()
       setSession(data)
       setStep('consent')
-    } catch {
-      setSession({
-        encounter_id: `AL-${Math.floor(1000 + Math.random() * 9000)}`,
-        patient_name: formData.fullName.trim() || 'Patient',
-        age: formData.age ? parseInt(formData.age, 10) : 34,
-        gender: formData.gender,
-      })
-      setStep('consent')
+    } catch (err) {
+      setError(err.message || 'Failed to start intake session')
     } finally {
       setLoading(false)
     }
