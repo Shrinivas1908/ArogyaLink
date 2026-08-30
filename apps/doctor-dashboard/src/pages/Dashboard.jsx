@@ -5,6 +5,7 @@ import MetricStats from '../components/MetricStats'
 import PatientQueue from '../components/PatientQueue'
 import EncounterDetail from '../components/EncounterDetail'
 import LiveEscalationsView from '../components/LiveEscalationsView'
+import FHIRExportsView from '../components/FHIRExportsView'
 import EscalationToast from '../components/EscalationToast'
 
 export default function Dashboard() {
@@ -588,41 +589,14 @@ export default function Dashboard() {
 
         {/* ── VIEW 5: FHIR Exports ─────────────────────────────────────── */}
         {activeNav === 'fhir' && (
-          <div className="bg-[#FAF7F2] rounded-[24px] p-8 border border-[#EFE8DE] shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#8C7A70] block">
-                  HL7 FHIR R4 CONFORMANCE
-                </span>
-                <h3 className="text-2xl font-serif text-[#2E1B15] mt-0.5">
-                  FHIR R4 Bundle Exporter
-                </h3>
-              </div>
-              <button
-                onClick={handleDownloadFHIR}
-                className="px-4 py-2 rounded-full bg-[#2E1B15] text-[#FAF6F0] text-xs font-bold hover:bg-[#3D251D] transition shadow-sm"
-              >
-                ⬇ Download JSON Bundle
-              </button>
-            </div>
-            
-            <div className="p-4 rounded-2xl bg-[#2E1B15] text-[#FAF6F0] font-mono text-xs overflow-x-auto max-h-96">
-              <pre>{JSON.stringify({
-                resourceType: 'Bundle',
-                type: 'document',
-                id: selectedEncounter?.encounter_id || selectedEncounter?.id || 'AL-2048',
-                patient: selectedEncounter?.patient_name || 'Ananya Sharma',
-                abdm_status: 'M1 & M2 Compatible',
-                timestamp: new Date().toISOString(),
-                entries: [
-                  { resource: 'Patient', id: selectedEncounter?.patient_id || 'demo-pat-01' },
-                  { resource: 'Encounter', status: 'finished' },
-                  { resource: 'ClinicalImpression', summary: selectedEncounter?.chief_complaint || 'Severe chest discomfort' },
-                  { resource: 'Consent', status: 'active', version: 'v1.0' }
-                ]
-              }, null, 2)}</pre>
-            </div>
-          </div>
+          <FHIRExportsView
+            encounters={encounters}
+            selectedEncounter={selectedEncounter}
+            onSelectEncounter={handleSelectEncounter}
+            onDownloadFHIR={handleDownloadFHIR}
+            onDeleteEncounter={handleDeleteEncounter}
+            onClearAllEncounters={handleClearAllEncounters}
+          />
         )}
       </main>
 
