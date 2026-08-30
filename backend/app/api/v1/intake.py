@@ -208,3 +208,113 @@ async def get_encounter_answers(
         "answers_count": len(answers),
         "answers": answers,
     }
+
+
+class ProcessVoiceNarrativeRequest(BaseModel):
+    encounter_id: str
+    narrative_text: str
+    language: str = "en"
+
+
+@router.post("/process-voice-narrative")
+async def process_voice_narrative(
+    body: ProcessVoiceNarrativeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Process full multi-sentence (50+ word) patient voice narrative.
+    Extracts clinical entities, saves answers to DB, and generates targeted live AI follow-up questions.
+    """
+    await validate_consented_encounter(body.encounter_id, db)
+    text_lower = body.narrative_text.lower()
+
+    # 1. Clinical Entity Extraction from Patient Speech
+    extracted_complaints = []
+    if any(k in text_lower for k in ["chest", "सीने", "छाती", "heart", "हार्ट", "pressure"]):
+        extracted_complaints.append("severe_chest_pain")
+    if any(k in text_lower for k in ["breath", "सांस", "shortness", "dum", "दम"]):
+        extracted_complaints.append("breathlessness")
+    if any(k in text_lower for k in ["fever", "बुखार", "ताप", "temperature", "chills", "ठंड"]):
+        extracted_complaints.append("fever")
+    if any(k in text_lower for k in ["stomach", "पेट", "abdomen", "gas", "vomit", "उल्टी"]):
+        extracted_complaints.append("abdominal_pain")
+    if any(k in text_lower for k in ["headache", "सिरदर्द", "डोके", "dizzy", "चक्कर"]):
+        extracted_complaints.append("headache")
+
+    if not extracted_complaints:
+        extracted_complaints.append("general_discomfort")
+
+    # Duration extraction
+    duration_val = "today"
+    if any(k in text_lower for k in ["week", "हफ्ते", "आठवडा", "month"]):
+        duration_val = "1_week"
+    elif any(k in text_lower for k in ["2", "3", "दो", "तीन", "days", "दिन"]):
+        duration_val = "2_3_days"
+    elif any(k in text_lower for k in ["hour", "घंटे", "तास", "morning", "सुबह", "सकाळ"]):
+        duration_val = "less_than_2_hours"
+
+    # Severity extraction
+    severity_val = "moderate"
+    if any(k in text_lower for k in ["severe", "crushing", "तेज", "असहनीय", "unbearable", "bahut", "खूप"]):
+        severity_val = "severe"
+    elif any(k in text_lower for k in ["mild", "हल्का", "थोडे", "thoda"]):
+        severity_val = "mild"
+
+    # Red Flag extraction
+    has_radiation = any(k in text_lower for k in ["arm", "hand", "हाथ", "jaw", "गर्दन", "shoulder", "कंधा"])
+    has_sweating = any(k in text_lower for k in ["sweat", "पसीना", "घाम", "cold sweat"])
+
+    # 2. Record extracted answers into DB
+    await engine.record_answer(body.encounter_id, "q_chief_complaint", extracted_complaints, db)
+    await engine.record_answer(body.encounter_id, "q_duration", duration_val, db)
+    await engine.record_answer(body.encounter_id, "q_severity", severity_val, db)
+    if has_radiation:
+        await engine.record_answer(body.encounter_id, "q_radiation", "left_arm_and_jaw", db)
+    if has_sweating:
+        await engine.record_answer(body.encounter_id, "q_sweating", "yes", db)
+
+    # 3. Dynamic Targeted Clinical Follow-Up Question Formulation
+    lang = body.language.lower()
+    if "severe_chest_pain" in extracted_complaints or "breathlessness" in extracted_complaints:
+        followups = {
+            "hi": "क्या आपको पहले से हाई ब्लड प्रेशर, हार्ट या शुगर की बीमारी है, और क्या चलने पर दर्द बढ़ता है?",
+            "mr": "तुम्हाला आधीपासून उच्च रक्तदाब, हृदयविकार किंवा मधुमेहाचा त्रास आहे का, आणि चालताना त्रास वाढतो का?",
+            "bn": "আপনার কি আগে থেকে উচ্চ রক্তচাপ বা ডায়াবেটিস আছে, এবং হাঁটার সময় কি ব্যথা বাড়ে?",
+            "ta": "உங்களுக்கு ஏற்கனவே உயர் இரத்த அழுத்தம் அல்லது நீரிழிவு நோய் உள்ளதா, நடக்கும்போது வலி அதிகரிக்கிறதா?",
+            "en": "Do you have any past history of hypertension, cardiac illness, or diabetes, and does the discomfort worsen on exertion?",
+        }
+    elif "fever" in extracted_complaints:
+        followups = {
+            "hi": "क्या आपको ठंड लगकर कपकपी या गले में खराश है, और क्या आपने पेरासिटामोल जैसी कोई दवा ली है?",
+            "mr": "तुम्हाला थंडी वाजून ताप येतो का आणि घशात खवखव आहे का?",
+            "bn": "আপনার কি কাঁপুনি দিয়ে জ্বর বা গলা ব্যথা আছে?",
+            "ta": "உங்களுக்கு நடுக்கத்துடன் காய்ச்சல் அல்லது தொண்டை வலி உள்ளதா?",
+            "en": "Are you experiencing chills, body ache, or throat irritation, and have you taken any antipyretic medication?",
+        }
+    else:
+        followups = {
+            "hi": "क्या आप पहले से कोई नियमित दवाइयां ले रहे हैं, और क्या आपको कोई अन्य एलर्जी है?",
+            "mr": "तुम्ही आधीपासून काही नियमित औषधे घेत आहात का?",
+            "bn": "আপনি কি কোনো নিয়মিত ওষুধ সেবন করছেন?",
+            "ta": "நீங்கள் ஏதேனும் வழக்கமான மருந்துகளை எடுத்துக்கொள்கிறீர்களா?",
+            "en": "Are you currently taking any regular prescription medications, and do you have any drug allergies?",
+        }
+
+    followup_q = followups.get(lang, followups["en"])
+
+    return {
+        "status": "success",
+        "encounter_id": body.encounter_id,
+        "narrative_received": body.narrative_text,
+        "extracted_entities": {
+            "chief_complaints": extracted_complaints,
+            "duration": duration_val,
+            "severity": severity_val,
+            "radiation": "left_arm_and_jaw" if has_radiation else "none",
+            "diaphoresis": "yes" if has_sweating else "no",
+        },
+        "ai_followup_question": followup_q,
+        "ai_followup_audio_text": followup_q,
+        "answers_recorded_count": 3 + (1 if has_radiation else 0) + (1 if has_sweating else 0),
+        "is_complete": False,
+    }

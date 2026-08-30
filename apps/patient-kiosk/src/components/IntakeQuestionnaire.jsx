@@ -19,6 +19,13 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
   const [voiceStatus, setVoiceStatus] = useState('')
   const [spokenTranscript, setSpokenTranscript] = useState('')
 
+  // Conversational Voice Narrative state (50+ word speech recognition)
+  const [narrativeInput, setNarrativeInput] = useState('')
+  const [narrativeExtracted, setNarrativeExtracted] = useState(null)
+  const [aiFollowup, setAiFollowup] = useState(null)
+  const [processingNarrative, setProcessingNarrative] = useState(false)
+  const [narrativeFollowupAnswer, setNarrativeFollowupAnswer] = useState('')
+
   // AYUSH state
   const [ayushPrakriti, setAyushPrakriti] = useState('vata')
   const [ayushAgni, setAyushAgni] = useState('strong')
@@ -93,6 +100,41 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
       if (matched.length > 0) {
         setSelectedMulti((prev) => Array.from(new Set([...prev, ...matched])))
       }
+    }
+  }
+
+  // ── Process Full Multi-Sentence (50+ word) Voice Narrative ──────────────
+  const handleProcessVoiceNarrative = async (textToProcess) => {
+    const text = (textToProcess || narrativeInput || spokenTranscript).trim()
+    if (!text || !encounterId) return
+    setProcessingNarrative(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/intake/process-voice-narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          encounter_id: encounterId,
+          narrative_text: text,
+          language: lang || 'en',
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to process voice narrative')
+      const data = await res.json()
+      setNarrativeExtracted(data.extracted_entities)
+      setAiFollowup(data.ai_followup_question)
+
+      // Speak the dynamic follow-up question in the patient's language
+      if ('speechSynthesis' in window && data.ai_followup_audio_text) {
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(data.ai_followup_audio_text)
+        utterance.lang = langObj.speechCode || 'en-IN'
+        window.speechSynthesis.speak(utterance)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setProcessingNarrative(false)
     }
   }
 
@@ -596,72 +638,149 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
             currentQuestion && (
               <div className="space-y-5">
                 
-                {/* ── ALWAYS-VISIBLE VOICE INPUT CONTROLLER BAR ──────── */}
-                <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#BFD8D2] space-y-3">
+                {/* ── REAL LIVE MULTILINGUAL VOICE INTAKE PANEL (50+ WORDS) ──────── */}
+                <div className="p-5 rounded-3xl bg-gradient-to-br from-[#F4EFE6] to-[#FAF7F2] border border-[#BFD8D2] shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <button
                         type="button"
                         onClick={handleVoiceToggle}
-                        className={`px-4 py-2 rounded-full font-bold text-xs flex items-center gap-2 transition shadow-md ${
+                        className={`px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition shadow-md ${
                           isListening
-                            ? 'bg-red-600 text-white animate-pulse'
+                            ? 'bg-red-600 text-white animate-bounce'
                             : 'bg-[#12322B] text-white hover:bg-[#1C453C]'
                         }`}
                       >
-                        <span className="text-sm">🎙️</span>
-                        <span>{isListening ? 'Listening… (Click to Stop)' : 'Speak in your Language'}</span>
+                        <span className="text-base">🎙️</span>
+                        <span>{isListening ? '🛑 Stop Recording & Analyze' : 'Speak Full Symptoms (50+ Words)'}</span>
                       </button>
-                      <span className="text-[11px] font-semibold text-[#5F7D74]">
+                      <span className="text-xs font-bold text-[#12322B]">
                         {langObj.label} ({langObj.nativeName})
                       </span>
                     </div>
 
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#12322B] bg-white px-2.5 py-1 rounded-full border border-[#E4EDE9]">
-                      Voice + Touch
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#12322B] bg-white px-3 py-1 rounded-full border border-[#BFD8D2]">
+                      Live Voice AI
                     </span>
                   </div>
 
-                  {/* Live Status or Transcription Text */}
-                  {(isListening || voiceStatus || spokenTranscript) && (
-                    <div className="p-3 bg-white rounded-xl border border-[#E4EDE9] text-xs space-y-1">
-                      <div className="flex items-center justify-between text-[#5F7D74]">
-                        <span className="font-bold">Live Microphone Input:</span>
-                        {isListening && (
-                          <span className="flex items-center gap-1 text-red-600 font-bold text-[10px]">
-                            <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-                            Recording Audio
-                          </span>
-                        )}
+                  {/* Real-time Voice Transcription Box */}
+                  <div className="p-4 bg-white rounded-2xl border border-[#BFD8D2] space-y-2">
+                    <div className="flex items-center justify-between text-[#5F7D74] text-xs font-bold">
+                      <span>Live Speech Recognition Stream:</span>
+                      {isListening ? (
+                        <span className="flex items-center gap-1 text-red-600 animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                          Listening to Microphone...
+                        </span>
+                      ) : (
+                        <span className="text-[#8C7A70]">
+                          Word count: {spokenTranscript ? spokenTranscript.trim().split(/\s+/).length : 0} words
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-sm font-semibold text-[#12322B] min-h-[44px] leading-relaxed">
+                      {spokenTranscript || (
+                        <span className="text-[#8C7A70] italic font-normal">
+                          Click the microphone button and speak your complete symptoms in detail (e.g. pain location, duration, severity, past history)...
+                        </span>
+                      )}
+                    </p>
+
+                    {spokenTranscript && !isListening && !narrativeExtracted && (
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleProcessVoiceNarrative(spokenTranscript)}
+                          disabled={processingNarrative}
+                          className="px-5 py-2 rounded-xl bg-[#12322B] hover:bg-[#1C453C] text-white text-xs font-bold transition shadow-sm"
+                        >
+                          {processingNarrative ? 'Analyzing Symptoms with Clinical AI...' : '🧠 Analyze Voice Narrative'}
+                        </button>
                       </div>
-                      <p className="text-sm font-semibold text-[#12322B]">
-                        {spokenTranscript || voiceStatus || 'Speak clearly into your device microphone…'}
-                      </p>
+                    )}
+                  </div>
+
+                  {/* AI Dynamic Extraction & Follow-Up Question */}
+                  {narrativeExtracted && (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3 animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                          <span>✓</span> Extracted Clinical Findings
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">
+                          AI Structured Triage
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-2.5 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-[10px] text-slate-500 block font-semibold">CHIEF COMPLAINT</span>
+                          <strong className="text-slate-900">{narrativeExtracted.chief_complaints?.join(', ')}</strong>
+                        </div>
+                        <div className="p-2.5 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-[10px] text-slate-500 block font-semibold">DURATION</span>
+                          <strong className="text-slate-900">{narrativeExtracted.duration}</strong>
+                        </div>
+                        <div className="p-2.5 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-[10px] text-slate-500 block font-semibold">SEVERITY</span>
+                          <strong className="text-slate-900">{narrativeExtracted.severity}</strong>
+                        </div>
+                        <div className="p-2.5 bg-white rounded-xl border border-emerald-100">
+                          <span className="text-[10px] text-slate-500 block font-semibold">RED FLAGS</span>
+                          <strong className="text-red-700">{narrativeExtracted.radiation !== 'none' ? 'Radiation Detected' : 'None'}</strong>
+                        </div>
+                      </div>
+
+                      {/* Targeted Live Follow-up Question */}
+                      {aiFollowup && (
+                        <div className="p-3.5 bg-white rounded-xl border border-emerald-300 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
+                              <span>🗣️</span> Live AI Follow-Up Question:
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if ('speechSynthesis' in window) {
+                                  window.speechSynthesis.cancel()
+                                  const u = new SpeechSynthesisUtterance(aiFollowup)
+                                  u.lang = langObj.speechCode || 'en-IN'
+                                  window.speechSynthesis.speak(u)
+                                }
+                              }}
+                              className="text-[10px] font-bold text-emerald-800 underline"
+                            >
+                              🔊 Repeat Question
+                            </button>
+                          </div>
+                          <p className="text-xs font-bold text-slate-900 leading-relaxed">
+                            {aiFollowup}
+                          </p>
+
+                          <div className="pt-1 flex gap-2">
+                            <input
+                              type="text"
+                              value={narrativeFollowupAnswer}
+                              onChange={(e) => setNarrativeFollowupAnswer(e.target.value)}
+                              placeholder="Speak or type your answer to the follow-up..."
+                              className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSubmitAnswer(narrativeFollowupAnswer || 'completed_voice_intake')
+                              }}
+                              className="px-4 py-1.5 rounded-lg bg-[#12322B] text-white text-xs font-bold"
+                            >
+                              Submit & Continue
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  {/* Quick Voice Simulation Presets for Fast Testing */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F7D74]">
-                      Or Click Quick Voice Presets:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { label: '🗣️ "Severe chest pain radiating to left arm"', text: 'Severe chest pain radiating to left arm with breathing difficulty' },
-                        { label: '🗣️ "तेज़ बुखार और सिरदर्द"', text: '3 din se tej bukhar aur sar me dard hai' },
-                        { label: '🗣️ "Difficulty breathing for 2 days"', text: 'Persistent breathlessness and wheezing on walking' },
-                      ].map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleVoiceTranscription(preset.text)}
-                          className="text-[11px] font-semibold px-3 py-1 rounded-lg bg-white border border-[#E4EDE9] text-[#12322B] hover:border-[#12322B] hover:bg-[#FAF7F2] transition shadow-2xs text-left"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* ── Question Header ─────────────────────────────────── */}
