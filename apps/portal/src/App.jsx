@@ -6,6 +6,7 @@ import TeleConsultationWidget from './components/TeleConsultationWidget'
 import SymptomTriageWidget from './components/SymptomTriageWidget'
 import HealthPassWidget from './components/HealthPassWidget'
 import PatientHealthLocker from './components/PatientHealthLocker'
+import VoiceHealthAssistant from './components/VoiceHealthAssistant'
 import Footer from './components/Footer'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <SymptomTriageWidget />
         <HealthPassWidget />
       </main>
+      <VoiceHealthAssistant />
       <Footer />
     </div>
   )

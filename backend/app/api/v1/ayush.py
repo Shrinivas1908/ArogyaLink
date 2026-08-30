@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.session_deps import validate_consented_encounter
+from app.services.ayush_interaction_service import ayush_interaction_service
 from app.services.ayush_service import AyushService
 
 router = APIRouter(prefix="/ayush", tags=["ayush"])
@@ -22,6 +23,11 @@ ayush_service = AyushService()
 class AssessPrakritiRequest(BaseModel):
     encounter_id: str
     responses: dict[str, Any]
+
+
+class CheckInteractionsRequest(BaseModel):
+    allopathic_drugs: list[str] = []
+    ayush_drugs: list[str] = []
 
 
 @router.post("/assess")
@@ -34,3 +40,20 @@ async def assess_prakriti(
     result = ayush_service.evaluate_prakriti(body.responses)
     result["encounter_id"] = body.encounter_id
     return result
+
+
+@router.post("/interactions/check")
+async def check_drug_herb_interactions(
+    body: CheckInteractionsRequest,
+) -> dict[str, Any]:
+    """Detect adverse cross-system interactions between allopathic and Ayurvedic formulations."""
+    interactions = ayush_interaction_service.check_interactions(
+        body.allopathic_drugs,
+        body.ayush_drugs,
+    )
+    return {
+        "status": "success",
+        "has_interactions": len(interactions) > 0,
+        "total_alerts": len(interactions),
+        "interactions": interactions,
+    }
