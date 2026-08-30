@@ -291,3 +291,107 @@ class GeminiClient:
         )
 
         return summary_object.model_dump()
+
+    def generate_conversational_reply(self, spoken_query: str, language: str = "en") -> dict[str, Any]:
+        """Generate real dynamic conversational triage guidance for patient voice input."""
+        q_lower = spoken_query.lower()
+        
+        # 1. Check for emergency red flags
+        is_emergency = any(w in q_lower for w in [
+            "chest pain", "सीने में दर्द", "छाती", "heart", "हार्ट", "stroke", "paralysis", 
+            "लकवा", "breath", "सांस", "unconscious", "बेहोश", "bleeding", "खून", "poison", "ज़हर"
+        ])
+
+        lang_name = {
+            "hi": "Hindi (हिंदी)",
+            "bn": "Bengali (বাংলা)",
+            "ta": "Tamil (தமிழ்)",
+            "te": "Telugu (తెలుగు)",
+            "mr": "Marathi (मराठी)",
+            "gu": "Gujarati (ગુજરાતી)",
+            "kn": "Kannada (ಕನ್ನಡ)",
+        }.get(language.lower(), "English")
+
+        prompt = (
+            f"You are ArogyaMitra, an empathetic, expert Indian PHC Clinical Triage Assistant.\n"
+            f"A patient speaks/asks: \"{spoken_query}\"\n"
+            f"Language requested: {lang_name}\n"
+            f"Instructions:\n"
+            f"1. Provide a concise, clear, and reassuring medical guidance in {lang_name} (2-3 sentences max).\n"
+            f"2. Clearly advise whether they should visit the PHC clinic immediately or if urgent emergency care (Call 108) is needed.\n"
+            f"3. Maintain medical accuracy and empathy without jargon.\n"
+            f"Output plain conversational text in {lang_name}."
+        )
+
+        # Call Gemini if available
+        if self.gemini_api_key and self.gemini_api_key.strip():
+            for model_name in GEMINI_SUMMARY_MODELS:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key.strip()}"
+                    payload = {
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 300},
+                    }
+                    with httpx.Client(timeout=3.0) as client:
+                        resp = client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            reply = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            return {
+                                "reply": reply,
+                                "is_emergency": is_emergency,
+                                "model_used": model_name,
+                            }
+                except Exception as e:
+                    logger.warning(f"Voice Gemini model {model_name} error: {e}")
+
+        # Call Groq if configured
+        if self.groq_api_key and self.groq_api_key.strip():
+            try:
+                headers = {"Authorization": f"Bearer {self.groq_api_key.strip()}", "Content-Type": "application/json"}
+                payload = {
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": f"You are ArogyaMitra medical triage AI. Respond concisely in {lang_name}."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 300,
+                }
+                with httpx.Client(timeout=3.0) as client:
+                    resp = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        reply = resp.json()["choices"][0]["message"]["content"].strip()
+                        return {
+                            "reply": reply,
+                            "is_emergency": is_emergency,
+                            "model_used": "groq-llama-3.3",
+                        }
+            except Exception as ge:
+                logger.warning(f"Voice Groq error: {ge}")
+
+        # Deterministic clinical safety response in target language
+        if is_emergency:
+            emergency_replies = {
+                "hi": "⚠️ आपके बताए गए लक्षण गंभीर लग रहे हैं। कृपया तुरंत नजदीकी प्राथमिक स्वास्थ्य केंद्र (PHC) में डॉक्टर से जांच कराएं या आपातकालीन 108 एम्बुलेंस सेवा पर संपर्क करें।",
+                "mr": "⚠️ तुमची लक्षणे गंभीर वाटत आहेत. कृपया त्वरित जवळच्या प्राथमिक आरोग्य केंद्रात (PHC) डॉक्टरांचा सल्ला घ्या किंवा 108 रुग्णवाहिका बोलवा.",
+                "bn": "⚠️ আপনার লক্ষণগুলি জরুরি বলে মনে হচ্ছে। অনুগ্রহ করে অবিলম্বে নিকটস্থ প্রাথমিক স্বাস্থ্য কেন্দ্রে (PHC) যান অথবা ১০৮ নম্বরে যোগাযোগ করুন।",
+                "ta": "⚠️ உங்கள் அறிகுறிகள் அவசர சிகிச்சை தேவைப்படுவதாகத் தெரிகிறது. தயவுசெய்து உடனடியாக அருகிலுள்ள ஆரம்ப சுகாதார நிலையத்தை (PHC) அணுகவும் அல்லது 108 ஐ அழைக்கவும்.",
+                "en": "⚠️ Your reported symptoms indicate a potential medical priority. Please visit your nearest Primary Health Centre (PHC) immediately for doctor evaluation and ECG/vitals check, or dial 108 emergency service.",
+            }
+            reply_text = emergency_replies.get(language.lower(), emergency_replies["en"])
+        else:
+            routine_replies = {
+                "hi": f"आपके प्रश्न '{spoken_query}' के अनुसार, हमारे प्राथमिक स्वास्थ्य केंद्र (PHC) में डॉक्टर उपलब्ध हैं। कृपया ओपीडी पर्ची बनवाकर परामर्श लें। पर्याप्त पानी पिएं और आराम करें।",
+                "mr": f"तुमच्या लक्षणांनुसार ('{spoken_query}'), प्राथमिक आरोग्य केंद्रात (PHC) डॉक्टरांकडून तपासणी करून घेणे योग्य ठरेल. पुरेसा आराम करा.",
+                "bn": f"আপনার উপসর্গ ('{spoken_query}') অনুযায়ী, নিকটস্থ স্বাস্থ্য কেন্দ্রে ডাক্তারের পরামর্শ নেওয়া উচিত। পর্যাপ্ত বিশ্রাম নিন।",
+                "ta": f"உங்கள் அறிகுறிகளின்படி ('{spoken_query}'), ஆரம்ப சுகாதார நிலையத்தில் மருத்துவரிடம் பரிசோதனை செய்வது நல்லது.",
+                "en": f"Regarding your query ('{spoken_query}'), our Primary Health Centre (PHC) doctors recommend coming in for an OPD consultation and vitals check. Stay hydrated and rest.",
+            }
+            reply_text = routine_replies.get(language.lower(), routine_replies["en"])
+
+        return {
+            "reply": reply_text,
+            "is_emergency": is_emergency,
+            "model_used": "clinical-rule-engine",
+        }

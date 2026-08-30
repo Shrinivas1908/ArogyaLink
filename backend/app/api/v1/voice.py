@@ -88,3 +88,24 @@ async def get_supported_voice_languages() -> dict[str, Any]:
             {"code": "en", "name": "English",  "native": "English",  "speech_code": "en-IN"},
         ]
     }
+
+
+class VoiceChatRequest(BaseModel):
+    query: str = Field(..., description="Spoken or typed symptom query")
+    language: str = Field(default="hi", description="Language code e.g. hi, mr, bn, ta, en")
+
+
+@router.post("/chat")
+async def voice_chat_assistant(body: VoiceChatRequest) -> dict[str, Any]:
+    """Provide real dynamic clinical AI advice for patient voice symptom queries."""
+    from app.integrations.gemini_client import GeminiClient
+    client = GeminiClient()
+    result = client.generate_conversational_reply(body.query, language=body.language)
+    return {
+        "status": "success",
+        "query": body.query,
+        "language": body.language,
+        "reply": result["reply"],
+        "is_emergency": result["is_emergency"],
+        "model_used": result.get("model_used", "ai-engine"),
+    }
