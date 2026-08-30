@@ -5,6 +5,7 @@ export default function EncounterDetail({
   onViewEvidence,
   onApprove,
   onDownloadFHIR,
+  onDeleteEncounter,
   overrideReason,
   setOverrideReason,
   onOverride,
@@ -860,6 +861,19 @@ export default function EncounterDetail({
           >
             ⬇ FHIR R4 Bundle
           </button>
+          {onDeleteEncounter && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to clear/discharge encounter ${encId.slice(0, 8)}?`)) {
+                  onDeleteEncounter(encId)
+                }
+              }}
+              className="px-4 py-2.5 rounded-full bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 text-xs font-bold transition shadow-sm active:scale-95 flex items-center gap-1.5"
+            >
+              <span>🗑️</span>
+              <span>Clear Encounter</span>
+            </button>
+          )}
         </div>
 
         {/* 🖨️ Digital Prescription & Pharmacy QR Modal */}

@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -293,4 +293,72 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
         "summary": clinical_summary,
         "ocr_result": cached_ocr,
         "created_at": enc.created_at.isoformat() if enc.created_at else "",
+    }
+
+
+@router.delete("/encounters/{encounter_id}")
+async def delete_encounter(
+    encounter_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Delete a specific encounter from the queue and remove associated clinical answers."""
+    try:
+        enc_uuid = uuid.UUID(encounter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid encounter UUID")
+
+    # Delete answers
+    await db.execute(delete(Answer).where(Answer.encounter_id == enc_uuid))
+    # Delete consent
+    await db.execute(delete(Consent).where(Consent.encounter_id == enc_uuid))
+    # Delete encounter
+    await db.execute(delete(Encounter).where(Encounter.id == enc_uuid))
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Encounter {encounter_id} successfully deleted from clinical queue.",
+        "encounter_id": encounter_id,
+    }
+
+
+@router.delete("/encounters/clear-all")
+async def clear_all_encounters(
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Clear all encounters and intake answers from the doctor queue."""
+    await db.execute(delete(Answer))
+    await db.execute(delete(Consent))
+    await db.execute(delete(Encounter))
+    await db.commit()
+    return {
+        "status": "success",
+        "message": "All clinical encounters have been cleared from the queue.",
+    }
+
+
+@router.post("/encounters/{encounter_id}/discharge")
+async def discharge_encounter(
+    encounter_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Mark an encounter as completed and discharged from the active queue."""
+    try:
+        enc_uuid = uuid.UUID(encounter_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid encounter UUID")
+
+    stmt = select(Encounter).where(Encounter.id == enc_uuid)
+    res = await db.execute(stmt)
+    enc = res.scalar_one_or_none()
+    if not enc:
+        raise HTTPException(status_code=404, detail="Encounter not found")
+
+    enc.status = "COMPLETED"
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Encounter {encounter_id} has been marked as COMPLETED / DISCHARGED.",
+        "encounter_id": encounter_id,
     }

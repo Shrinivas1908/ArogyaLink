@@ -219,6 +219,43 @@ export default function Dashboard() {
     setTimeout(() => setActionMessage(null), 4000)
   }
 
+  const handleDeleteEncounter = async (encId) => {
+    try {
+      const res = await fetch(`/api/queue/encounters/${encId}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        setActionMessage(`✓ Encounter ${encId.slice(0, 8)} cleared successfully.`)
+        setEncounters((prev) => prev.filter((e) => (e.encounter_id || e.id) !== encId))
+        if ((selectedEncounter?.encounter_id || selectedEncounter?.id) === encId) {
+          setSelectedEncounter(null)
+        }
+        setTimeout(() => setActionMessage(null), 4000)
+      } else {
+        setActionMessage('Failed to delete encounter from server.')
+      }
+    } catch {
+      setActionMessage('Network error while deleting encounter.')
+    }
+  }
+
+  const handleClearAllEncounters = async () => {
+    if (!window.confirm('Are you sure you want to clear all encounters from the doctor queue?')) return
+    try {
+      const res = await fetch('/api/queue/encounters/clear-all', {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        setEncounters([])
+        setSelectedEncounter(null)
+        setActionMessage('✓ All encounters cleared from queue.')
+        setTimeout(() => setActionMessage(null), 4000)
+      }
+    } catch {
+      setActionMessage('Failed to clear queue.')
+    }
+  }
+
   const filteredEncounters = encounters.filter((e) => {
     const matchesFilter =
       filterSeverity === 'ALL' || (e.triage_level || 'ROUTINE').toUpperCase() === filterSeverity
@@ -309,6 +346,7 @@ export default function Dashboard() {
                   onViewEvidence={() => setActiveNav('escalations')}
                   onApprove={handleApprove}
                   onDownloadFHIR={handleDownloadFHIR}
+                  onDeleteEncounter={handleDeleteEncounter}
                   overrideReason={overrideReason}
                   setOverrideReason={setOverrideReason}
                   onOverride={handleOverride}
@@ -347,11 +385,21 @@ export default function Dashboard() {
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#7C6C62] font-semibold">Active Folder:</span>
-                <span className="px-3 py-1.5 rounded-xl bg-white border border-[#EFE8DE] text-xs font-mono font-bold text-[#2E1B15]">
-                  /clinical-records/2026/08/28/
-                </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleClearAllEncounters}
+                  className="px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 text-xs font-bold transition shadow-sm active:scale-95 flex items-center gap-1.5"
+                >
+                  <span>🗑️</span>
+                  <span>Clear All Encounters</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#7C6C62] font-semibold">Active Folder:</span>
+                  <span className="px-3 py-1.5 rounded-xl bg-white border border-[#EFE8DE] text-xs font-mono font-bold text-[#2E1B15]">
+                    /clinical-records/2026/08/28/
+                  </span>
+                </div>
               </div>
             </div>
 
