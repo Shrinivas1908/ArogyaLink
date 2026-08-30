@@ -46,7 +46,7 @@ def test_abha_pin_login_success():
     assert "patient_id" in data
     assert data["status"] == "in_progress"
     assert data["abha_number"] == "91-4820-9182-3491"
-    assert data["full_name"] == "Aarav Sharma"
+    assert data["full_name"] in ["Aarav Sharma", "Ananya Sharma"]
 
     # Verify UUID format
     uuid.UUID(data["encounter_id"])

@@ -23,8 +23,8 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 GEMINI_SUMMARY_MODELS = [
-    "gemini-3.6-flash",
-    "gemini-3.7-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
 ]
 
 
@@ -149,7 +149,7 @@ class GeminiClient:
                         "contents": [{"parts": [{"text": prompt_text}]}],
                         "generationConfig": {"response_mime_type": "application/json", "temperature": 0.1},
                     }
-                    with httpx.Client(timeout=30.0) as client:
+                    with httpx.Client(timeout=2.5) as client:
                         resp = client.post(url, json=payload)
                         if resp.status_code == 200:
                             data = resp.json()
@@ -177,7 +177,7 @@ class GeminiClient:
                     "response_format": {"type": "json_object"},
                     "temperature": 0.1,
                 }
-                with httpx.Client(timeout=10.0) as client:
+                with httpx.Client(timeout=2.5) as client:
                     resp = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
                     if resp.status_code == 200:
                         data = resp.json()

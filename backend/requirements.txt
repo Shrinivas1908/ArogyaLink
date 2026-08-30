@@ -1,19 +1,24 @@
 # ArogyaLink Backend — Python Dependencies
 # Install with: pip install -r requirements.txt
 
-# OCR
+# OCR & Computer Vision
 paddlepaddle==3.3.1
 paddleocr==3.7.0
 opencv-contrib-python==4.10.0.84
+pillow==12.2.0
 
-# Web framework
+# Web framework & ASGI Server
 fastapi==0.115.0
-uvicorn==0.32.0
+uvicorn[standard]==0.32.0
+websockets==12.0
 python-multipart==0.0.17
 
-# Database
+# Database & Migrations
 SQLAlchemy==2.0.49
 alembic==1.19.1
+asyncpg==0.30.0
+aiosqlite==0.20.0
+psycopg2-binary==2.9.10
 
 # Config & validation
 pydantic==2.9.2
@@ -21,18 +26,18 @@ pydantic-settings==2.15.0
 pydantic_core==2.23.4
 python-dotenv==1.0.0
 
-# Auth
+# Auth & Cryptography
 passlib==1.7.4
 python-jose==3.3.0
+PyJWT[crypto]==2.9.0
+cryptography==43.0.1
+bcrypt==4.2.0
 
 # HTTP client
 httpx==0.27.2
 
-# Image processing / OCR
-pillow==12.2.0
-
 # Cache
 redis==5.2.0
 
-# Internal dependencies (auto-installed, pinned for reproducibility)
+# Internal dependencies
 typing-inspection==0.4.4

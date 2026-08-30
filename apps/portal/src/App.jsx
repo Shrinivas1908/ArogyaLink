@@ -5,6 +5,7 @@ import RoleShowcase from './components/RoleShowcase'
 import TeleConsultationWidget from './components/TeleConsultationWidget'
 import SymptomTriageWidget from './components/SymptomTriageWidget'
 import HealthPassWidget from './components/HealthPassWidget'
+import PatientHealthLocker from './components/PatientHealthLocker'
 import Footer from './components/Footer'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
       <Header />
       <main className="flex-1 space-y-12">
         <Hero />
+        <PatientHealthLocker />
         <RoleShowcase />
         <TeleConsultationWidget />
         <SymptomTriageWidget />

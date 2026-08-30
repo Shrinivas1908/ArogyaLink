@@ -208,24 +208,7 @@ ArogyaLink features an editorial, human-centered clinical design system engineer
 - **Design Tokens & Styling**: TailwindCSS v4 with `@layer base` Warm Linen & Cream Organic theme
 - **Typography**: Google Fonts (*Fraunces*, *Newsreader*, *Plus Jakarta Sans*, *Inter*)
 - **Icons & Visuals**: Lucide-React, custom animated waveform indicators
-- **Touchscreen Ergonomics**: Minimum 48px touch targets, single-tap preset symptom chips, touch keypad/selectors, and visual audio waveforms
-- **Realtime**: WebSockets, Web Speech API, Native Camera Capture
-
----
-
-## 📋 Prerequisites
-
-Before running ArogyaLink locally, ensure you have the following installed:
-1. **Python 3.10+** (Recommended: Python 3.12 or 3.13)
-2. **Node.js 18+** and **npm**
-3. **Git**
-
----
-
-## ⚙️ Installation & Local Setup
-
-### Step 1: Clone the Repository
-```bash
+2```bash
 git clone https://github.com/Shrinivas1908/ArogyaLink.git
 cd ArogyaLink
 ```

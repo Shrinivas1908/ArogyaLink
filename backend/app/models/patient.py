@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, func, Uuid, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -18,7 +17,7 @@ from app.models.base import Base
 class Patient(Base):
     __tablename__ = "patients"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gender: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -35,9 +34,9 @@ class Patient(Base):
 class Encounter(Base):
     __tablename__ = "encounters"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(String(50), default="in_progress", nullable=False)
     kiosk_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -48,7 +47,7 @@ class Encounter(Base):
 
     # Triage and Red-Flag Fields (Phase 5)
     triage_level: Mapped[str] = mapped_column(String(50), default="ROUTINE", nullable=False, index=True)
-    red_flags: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
+    red_flags: Mapped[dict | list | None] = mapped_column(JSON, nullable=True)
     triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     patient: Mapped[Patient] = relationship("Patient", back_populates="encounters")
@@ -58,9 +57,9 @@ class Encounter(Base):
 class Consent(Base):
     __tablename__ = "consent"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     encounter_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("encounters.id", ondelete="CASCADE"), nullable=False, unique=True
+        Uuid(as_uuid=True), ForeignKey("encounters.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     consented: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     consent_version: Mapped[str] = mapped_column(String(50), default="v1.0", nullable=False)

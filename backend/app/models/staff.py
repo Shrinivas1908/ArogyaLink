@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import String, Boolean, DateTime, func, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -18,7 +17,7 @@ from app.models.base import Base
 class StaffProfile(Base):
     __tablename__ = "staff_profiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(50), nullable=False)  # 'doctor' or 'admin'
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

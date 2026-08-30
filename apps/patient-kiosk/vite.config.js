@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 // Patient Kiosk — Vite config
 // Runs on port 5173. Proxies /api → FastAPI backend (port 8000).
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     tailwindcss(),

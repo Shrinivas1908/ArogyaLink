@@ -1,6 +1,5 @@
-version: "3.9"
-
 services:
+  # ── 1. PostgreSQL Database ───────────────────────────────────────────
   db:
     image: postgres:16-alpine
     container_name: arogya_link_db
@@ -18,6 +17,107 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - arogya_net
+
+  # ── 2. FastAPI Backend & AI Services ──────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arogya_link_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://arogya:arogya_pass@db:5432/arogya_link
+      - APP_ENV=production
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:80,http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:5175
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - BHASHINI_API_KEY=${BHASHINI_API_KEY:-}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_JWT_AUD=${SUPABASE_JWT_AUD:-authenticated}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+    env_file:
+      - path: ./backend/.env
+        required: false
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - arogya_net
+
+  # ── 3. Patient Kiosk UI (Port 5173) ──────────────────────────────────
+  patient-kiosk:
+    build:
+      context: ./apps/patient-kiosk
+      dockerfile: Dockerfile
+    container_name: arogya_link_kiosk
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - arogya_net
+
+  # ── 4. Doctor Dashboard UI (Port 5174) ───────────────────────────────
+  doctor-dashboard:
+    build:
+      context: ./apps/doctor-dashboard
+      dockerfile: Dockerfile
+    container_name: arogya_link_doctor_dashboard
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5174:80"
+    networks:
+      - arogya_net
+
+  # ── 5. Main Portal UI (Port 5175) ────────────────────────────────────
+  portal:
+    build:
+      context: ./apps/portal
+      dockerfile: Dockerfile
+    container_name: arogya_link_portal
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5175:80"
+    networks:
+      - arogya_net
+
+  # ── 6. Unified Reverse Proxy Gateway (Port 80) ───────────────────────
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: arogya_link_gateway
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - patient-kiosk
+      - doctor-dashboard
+      - portal
+    ports:
+      - "80:80"
+      - "8080:80"
+    networks:
+      - arogya_net
+
+networks:
+  arogya_net:
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local

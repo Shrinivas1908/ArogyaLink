@@ -80,11 +80,32 @@ class PaddleOCRClient:
         self.lang = settings.paddleocr_lang
         self.gemini_api_key = settings.gemini_api_key
 
+    def _preprocess_image(self, image_bytes: bytes) -> bytes:
+        """Enhance image using OpenCV CLAHE (Contrast Limited Adaptive Histogram Equalization)."""
+        try:
+            import cv2
+            import numpy as np
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is None:
+                return image_bytes
+            # Convert to Grayscale & apply CLAHE for shadow/glare elimination
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            enhanced = clahe.apply(gray)
+            _, buffer = cv2.imencode(".jpg", enhanced, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+            return buffer.tobytes()
+        except Exception as e:
+            logger.warning(f"OpenCV preprocessing notice: {e}")
+            return image_bytes
+
     def process_image_bytes(self, image_bytes: bytes, filename: str = "") -> dict[str, Any]:
         """Extract structured medical text, medications, dosages, and lab investigations from file bytes."""
-        if not image_bytes:
+        if not image_bytes or len(image_bytes) < 100:
             return {
-                "status": "error",
+                "status": "failed",
+                "error_code": "OCR_EMPTY_FILE",
+                "message": "The uploaded file is empty or corrupted. Please upload a valid image or PDF.",
                 "raw_text": "",
                 "detected_medications": [],
                 "lab_results": [],
@@ -95,9 +116,12 @@ class PaddleOCRClient:
         doc_id = f"DOC-MED-{doc_hash[:8].upper()}"
         is_pdf = filename.lower().endswith(".pdf") or image_bytes.startswith(b"%PDF-")
 
+        # Preprocess image with OpenCV (unless PDF)
+        processed_bytes = image_bytes if is_pdf else self._preprocess_image(image_bytes)
+
         # 1. Primary: Gemini Multimodal Vision API
         if self.gemini_api_key and self.gemini_api_key.strip():
-            ai_result = self._extract_with_gemini_vision(image_bytes, is_pdf=is_pdf)
+            ai_result = self._extract_with_gemini_vision(processed_bytes, is_pdf=is_pdf)
             if ai_result and ai_result.get("status") == "success":
                 ai_result["document_id"] = doc_id
                 if not ai_result.get("document_type"):
@@ -119,22 +143,20 @@ class PaddleOCRClient:
                     "lab_results": labs,
                     "confidence_score": 0.97,
                     "language": self.lang,
-                    "engine": "PyMuPDF + BioClinical-NER v2.4",
+                    "engine": "PyMuPDF + BioClinical-NER",
                 }
 
-        # 3. Deterministic Clinical Entity Baseline Fallback
-        meds, labs, raw_lines, conf = self._extract_local_fallback(image_bytes, doc_hash)
+        # 3. Honest Failure State (Never return fabricated fake medical data)
         return {
-            "status": "success",
+            "status": "failed",
+            "error_code": "OCR_UNREADABLE_IMAGE",
+            "message": "OCR could not detect readable medical text or prescriptions in the uploaded file. Please ensure the document is well-lit, in focus, and unwrinkled.",
             "document_id": doc_id,
-            "document_type": "Medical Prescription & Investigation Record",
-            "date": "2026-08-28",
-            "raw_text": "\n".join(raw_lines),
-            "detected_medications": meds,
-            "lab_results": labs,
-            "confidence_score": conf,
-            "language": self.lang,
-            "engine": "PaddleOCR + BioClinical-NER v2.4",
+            "raw_text": "",
+            "detected_medications": [],
+            "lab_results": [],
+            "confidence_score": 0.0,
+            "engine": "PaddleOCR + BioClinical-NER",
         }
 
     def _extract_text_from_pdf(self, pdf_bytes: bytes) -> str:

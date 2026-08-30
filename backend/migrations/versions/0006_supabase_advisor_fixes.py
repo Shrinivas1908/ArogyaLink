@@ -18,6 +18,20 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # 0. Ensure role 'authenticated' and schema 'auth' exist (for standalone Postgres environments)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                CREATE ROLE authenticated;
+            END IF;
+            CREATE SCHEMA IF NOT EXISTS auth;
+            CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $fn$
+                SELECT NULL::uuid;
+            $fn$;
+        END $$;
+    """)
+
     # 1. Foreign Key Index on encounters.patient_id
     op.create_index(
         "ix_encounters_patient_id",

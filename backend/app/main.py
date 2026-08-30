@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import uuid
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.api.v1 import audit as audit_router
+from app.api.v1 import auth_otp as auth_otp_router
 from app.api.v1 import ayush as ayush_router
 from app.api.v1 import doctor_queue as doctor_queue_router
 from app.api.v1 import fhir as fhir_router
@@ -29,6 +31,7 @@ from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
 from app.api.v1 import ocr as ocr_router
 from app.api.v1 import offline_sync as offline_sync_router
+from app.api.v1 import patient_history as patient_history_router
 from app.api.v1 import reminders as reminders_router
 from app.api.v1 import session as session_router
 from app.api.v1 import staff as staff_router
@@ -37,6 +40,20 @@ from app.api.v1 import triage as triage_router
 from app.api.v1 import voice as voice_router
 from app.api.v1 import ws_notifications as ws_router
 from app.core.config import settings
+from app.core.database import engine
+from app.models.base import Base
+import app.models  # noqa: F401
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager to initialize database tables on startup."""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"[ArogyaLink] Database initialization notice: {e}")
+    yield
 
 
 def create_app() -> FastAPI:
@@ -48,6 +65,7 @@ def create_app() -> FastAPI:
         description="Patient kiosk and clinical review platform — SIH 2026",
         docs_url="/docs" if settings.app_env == "development" else None,
         redoc_url="/redoc" if settings.app_env == "development" else None,
+        lifespan=lifespan,
     )
 
     # ── CORS — restricted to kiosk + dashboard origins only ────────────
@@ -95,6 +113,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ──────────────────────────────────────────────────────────
     app.include_router(health_router.router)
+    app.include_router(auth_otp_router.router)
     app.include_router(staff_router.router)
     app.include_router(session_router.router)
     app.include_router(intake_router.router)
@@ -109,6 +128,7 @@ def create_app() -> FastAPI:
     app.include_router(offline_sync_router.router)
     app.include_router(ayush_router.router)
     app.include_router(reminders_router.router)
+    app.include_router(patient_history_router.router)
 
     return app
 

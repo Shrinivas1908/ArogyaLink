@@ -18,14 +18,21 @@ from app.core.config import settings
 
 from sqlalchemy.pool import NullPool
 
-# Async engine — uses asyncpg for PostgreSQL with NullPool for clean connection lifecycle
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.app_env == "development",
-    pool_pre_ping=True,
-    poolclass=NullPool,
-    connect_args={"statement_cache_size": 0},
-)
+# Async engine — dynamically supports SQLite or PostgreSQL
+if settings.database_url.startswith("sqlite"):
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.app_env == "development",
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.app_env == "development",
+        pool_pre_ping=True,
+        poolclass=NullPool,
+        connect_args={"statement_cache_size": 0},
+    )
 
 # Session factory
 AsyncSessionLocal = async_sessionmaker(
