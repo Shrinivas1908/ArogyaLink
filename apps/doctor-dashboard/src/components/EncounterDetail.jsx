@@ -16,8 +16,23 @@ export default function EncounterDetail({
   const [showAiBreakdown, setShowAiBreakdown] = useState(true)
   const [showRawOcr, setShowRawOcr] = useState(false)
   const [scheduledReminderMsg, setScheduledReminderMsg] = useState(null)
+  const [inlineActionStatus, setInlineActionStatus] = useState(null)
 
-  if (!encounter) return null
+  if (!encounter) {
+    return (
+      <div className="bg-white rounded-3xl p-10 border border-[#EFE8DE] shadow-sm text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-[#FAF6F0] text-[#6E3E30] flex items-center justify-center text-3xl mx-auto border border-[#EFE8DE]">
+          🩺
+        </div>
+        <div>
+          <h3 className="text-base font-serif font-bold text-[#2E1B15]">No Patient Selected</h3>
+          <p className="text-xs text-[#7C6C62] mt-1 max-w-sm mx-auto">
+            Select an encounter from the left queue to review AI triages, vital panels, and OCR documents.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const encId = encounter.encounter_id || encounter.id || 'AL-2048'
   const patientName = encounter.patient?.full_name || encounter.patient_name || 'Ananya Sharma'
@@ -52,8 +67,6 @@ export default function EncounterDetail({
     setScheduledReminderMsg(`⏰ Reminder active: "${medName}" scheduled daily at ${time} via WhatsApp/SMS.`)
     setTimeout(() => setScheduledReminderMsg(null), 4000)
   }
-
-  const [inlineActionStatus, setInlineActionStatus] = useState(null)
 
   const handleApproveClick = () => {
     onApprove()

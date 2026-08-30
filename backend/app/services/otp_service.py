@@ -135,24 +135,48 @@ class OTPService:
         }
 
     async def _dispatch_sms(self, phone: str, otp: str) -> bool:
-        """Helper to dispatch SMS via third-party or government DLT gateway if keys exist."""
-        # Check if production SMS gateway configured
-        fast2sms_key = getattr(settings, "FAST2SMS_API_KEY", None)
-        if fast2sms_key:
+        """Helper to dispatch real SMS via Fast2SMS Indian SMS Gateway."""
+        fast2sms_key = (
+            getattr(settings, "fast2sms_api_key", None)
+            or getattr(settings, "FAST2SMS_API_KEY", None)
+        )
+        if fast2sms_key and fast2sms_key.strip():
             try:
-                async with httpx.AsyncClient(timeout=5.0) as client:
+                async with httpx.AsyncClient(timeout=8.0) as client:
                     resp = await client.post(
                         "https://www.fast2sms.com/dev/bulkV2",
-                        headers={"authorization": fast2sms_key},
+                        headers={
+                            "authorization": fast2sms_key.strip(),
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
                         data={
                             "variables_values": otp,
                             "route": "otp",
                             "numbers": phone,
                         },
                     )
-                    return resp.status_code == 200
+                    resp_data = resp.json()
+                    logger.info(f"[Fast2SMS] Response for {phone}: {resp_data}")
+                    if resp_data.get("return") is True:
+                        return True
+                    
+                    # Fallback to Quick SMS route if OTP template requires custom message
+                    if resp_data.get("status_code") != 200:
+                        fallback_resp = await client.post(
+                            "https://www.fast2sms.com/dev/bulkV2",
+                            headers={"authorization": fast2sms_key.strip()},
+                            data={
+                                "message": f"Your ArogyaLink Health Portal verification OTP is {otp}. Valid for 5 minutes.",
+                                "language": "english",
+                                "route": "q",
+                                "numbers": phone,
+                            },
+                        )
+                        fallback_data = fallback_resp.json()
+                        logger.info(f"[Fast2SMS Quick Route] Response: {fallback_data}")
+                        return fallback_data.get("return") is True
             except Exception as e:
-                logger.warning(f"[OTP Service] SMS delivery failed: {e}")
+                logger.warning(f"[OTP Service] Fast2SMS dispatch exception: {e}")
                 return False
         return False
 

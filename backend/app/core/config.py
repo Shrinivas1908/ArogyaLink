@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     abdm_env: str = "sandbox"
     paddleocr_lang: str = "en"
     voice_timeout_secs: int = 10
+    fast2sms_api_key: str = ""
 
 
 # Single shared instance — import this everywhere
