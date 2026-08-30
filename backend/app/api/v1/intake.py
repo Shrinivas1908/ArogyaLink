@@ -7,6 +7,7 @@ Endpoints:
   - GET  /intake/next-question?encounter_id=...&lang=hi : Fetch next question (optionally translated).
   - POST /intake/answer                                  : Submit answer and get next question.
   - GET  /intake/answers/{encounter_id}                  : Get all submitted answers for encounter.
+  - POST /intake/process-voice-narrative                 : Comprehensive Universal Case Narrative Extraction.
 """
 
 from __future__ import annotations
@@ -16,19 +17,20 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.session_deps import validate_consented_encounter
 from app.engines.question_engine import QuestionEngine
 from app.models.patient import Encounter
+from app.services.clinical_intake_engine import clinical_intake_service
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 engine = QuestionEngine()
 
 
 # ── Inline question translations ──────────────────────────────────────────
-# Keys match question IDs in questions.json. Add more languages here as needed.
 _Q_TEXT: dict[str, dict[str, str]] = {
     "q_chief_complaint": {
         "hi": "आज आप कौन से मुख्य लक्षण या स्वास्थ्य समस्याएं अनुभव कर रहे हैं?",
@@ -136,23 +138,11 @@ async def get_next_question(
     lang: str = "en",
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Fetch the next clinical intake question for an active consented encounter.
-
-    Args:
-        encounter_id: Active encounter UUID.
-        lang: ISO 639-1 language code (en|hi|bn|ta|te|mr|gu). Defaults to 'en'.
-    """
-    # 1. Validate encounter exists, is active, and has consent
+    """Fetch the next clinical intake question for an active consented encounter."""
     await validate_consented_encounter(encounter_id, db)
-
-    # 2. Retrieve submitted answers dictionary
     answers = await engine.get_answers_dict(encounter_id, db)
-
-    # 3. Calculate next question
     next_q = engine.next_question(encounter_id, answers)
     is_comp = engine.is_complete(answers)
-
-    # 4. Translate question text if a non-English lang requested
     translated_q = _translate_question(next_q, lang) if next_q else next_q
 
     return {
@@ -168,10 +158,8 @@ async def submit_answer(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Submit an answer to a question and receive the next question in sequence."""
-    # 1. Validate encounter exists, is active, and has consent
     await validate_consented_encounter(body.encounter_id, db)
 
-    # 2. Record answer in DB
     await engine.record_answer(
         encounter_id=body.encounter_id,
         question_id=body.question_id,
@@ -179,10 +167,7 @@ async def submit_answer(
         db=db,
     )
 
-    # 3. Fetch updated answers
     answers = await engine.get_answers_dict(body.encounter_id, db)
-
-    # 4. Determine next question & completion status
     next_q = engine.next_question(body.encounter_id, answers)
     is_comp = engine.is_complete(answers)
 
@@ -222,99 +207,51 @@ async def process_voice_narrative(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """
-    Process full multi-sentence (50+ word) patient voice narrative.
+    Process full multi-sentence (50+ word) patient voice narrative across all 12 organ systems and disease categories.
     Extracts clinical entities, saves answers to DB, and generates targeted live AI follow-up questions.
     """
     await validate_consented_encounter(body.encounter_id, db)
-    text_lower = body.narrative_text.lower()
-
-    # 1. Clinical Entity Extraction from Patient Speech
-    extracted_complaints = []
-    if any(k in text_lower for k in ["chest", "सीने", "छाती", "heart", "हार्ट", "pressure"]):
-        extracted_complaints.append("severe_chest_pain")
-    if any(k in text_lower for k in ["breath", "सांस", "shortness", "dum", "दम"]):
-        extracted_complaints.append("breathlessness")
-    if any(k in text_lower for k in ["fever", "बुखार", "ताप", "temperature", "chills", "ठंड"]):
-        extracted_complaints.append("fever")
-    if any(k in text_lower for k in ["stomach", "पेट", "abdomen", "gas", "vomit", "उल्टी"]):
-        extracted_complaints.append("abdominal_pain")
-    if any(k in text_lower for k in ["headache", "सिरदर्द", "डोके", "dizzy", "चक्कर"]):
-        extracted_complaints.append("headache")
-
-    if not extracted_complaints:
-        extracted_complaints.append("general_discomfort")
-
-    # Duration extraction
-    duration_val = "today"
-    if any(k in text_lower for k in ["week", "हफ्ते", "आठवडा", "month"]):
-        duration_val = "1_week"
-    elif any(k in text_lower for k in ["2", "3", "दो", "तीन", "days", "दिन"]):
-        duration_val = "2_3_days"
-    elif any(k in text_lower for k in ["hour", "घंटे", "तास", "morning", "सुबह", "सकाळ"]):
-        duration_val = "less_than_2_hours"
-
-    # Severity extraction
-    severity_val = "moderate"
-    if any(k in text_lower for k in ["severe", "crushing", "तेज", "असहनीय", "unbearable", "bahut", "खूप"]):
-        severity_val = "severe"
-    elif any(k in text_lower for k in ["mild", "हल्का", "थोडे", "thoda"]):
-        severity_val = "mild"
-
-    # Red Flag extraction
-    has_radiation = any(k in text_lower for k in ["arm", "hand", "हाथ", "jaw", "गर्दन", "shoulder", "कंधा"])
-    has_sweating = any(k in text_lower for k in ["sweat", "पसीना", "घाम", "cold sweat"])
+    
+    # 1. Comprehensive Universal Case Analysis across all specialties
+    analysis = clinical_intake_service.analyze_patient_narrative(
+        narrative_text=body.narrative_text,
+        language=body.language,
+    )
 
     # 2. Record extracted answers into DB
-    await engine.record_answer(body.encounter_id, "q_chief_complaint", extracted_complaints, db)
-    await engine.record_answer(body.encounter_id, "q_duration", duration_val, db)
-    await engine.record_answer(body.encounter_id, "q_severity", severity_val, db)
-    if has_radiation:
-        await engine.record_answer(body.encounter_id, "q_radiation", "left_arm_and_jaw", db)
-    if has_sweating:
-        await engine.record_answer(body.encounter_id, "q_sweating", "yes", db)
+    await engine.record_answer(body.encounter_id, "q_chief_complaint", analysis.primary_complaints, db)
+    await engine.record_answer(body.encounter_id, "q_duration", analysis.duration, db)
+    await engine.record_answer(body.encounter_id, "q_severity", analysis.severity, db)
+    if analysis.emergency_red_flags:
+        await engine.record_answer(body.encounter_id, "q_red_flags", analysis.emergency_red_flags, db)
+    if analysis.medical_history_noted:
+        await engine.record_answer(body.encounter_id, "q_medical_history", analysis.medical_history_noted, db)
 
-    # 3. Dynamic Targeted Clinical Follow-Up Question Formulation
-    lang = body.language.lower()
-    if "severe_chest_pain" in extracted_complaints or "breathlessness" in extracted_complaints:
-        followups = {
-            "hi": "क्या आपको पहले से हाई ब्लड प्रेशर, हार्ट या शुगर की बीमारी है, और क्या चलने पर दर्द बढ़ता है?",
-            "mr": "तुम्हाला आधीपासून उच्च रक्तदाब, हृदयविकार किंवा मधुमेहाचा त्रास आहे का, आणि चालताना त्रास वाढतो का?",
-            "bn": "আপনার কি আগে থেকে উচ্চ রক্তচাপ বা ডায়াবেটিস আছে, এবং হাঁটার সময় কি ব্যথা বাড়ে?",
-            "ta": "உங்களுக்கு ஏற்கனவே உயர் இரத்த அழுத்தம் அல்லது நீரிழிவு நோய் உள்ளதா, நடக்கும்போது வலி அதிகரிக்கிறதா?",
-            "en": "Do you have any past history of hypertension, cardiac illness, or diabetes, and does the discomfort worsen on exertion?",
-        }
-    elif "fever" in extracted_complaints:
-        followups = {
-            "hi": "क्या आपको ठंड लगकर कपकपी या गले में खराश है, और क्या आपने पेरासिटामोल जैसी कोई दवा ली है?",
-            "mr": "तुम्हाला थंडी वाजून ताप येतो का आणि घशात खवखव आहे का?",
-            "bn": "আপনার কি কাঁপুনি দিয়ে জ্বর বা গলা ব্যথা আছে?",
-            "ta": "உங்களுக்கு நடுக்கத்துடன் காய்ச்சல் அல்லது தொண்டை வலி உள்ளதா?",
-            "en": "Are you experiencing chills, body ache, or throat irritation, and have you taken any antipyretic medication?",
-        }
-    else:
-        followups = {
-            "hi": "क्या आप पहले से कोई नियमित दवाइयां ले रहे हैं, और क्या आपको कोई अन्य एलर्जी है?",
-            "mr": "तुम्ही आधीपासून काही नियमित औषधे घेत आहात का?",
-            "bn": "আপনি কি কোনো নিয়মিত ওষুধ সেবন করছেন?",
-            "ta": "நீங்கள் ஏதேனும் வழக்கமான மருந்துகளை எடுத்துக்கொள்கிறீர்களா?",
-            "en": "Are you currently taking any regular prescription medications, and do you have any drug allergies?",
-        }
-
-    followup_q = followups.get(lang, followups["en"])
+    # Update encounter triage level if critical/urgent
+    enc_stmt = select(Encounter).where(Encounter.id == uuid.UUID(body.encounter_id))
+    enc_res = await db.execute(enc_stmt)
+    enc = enc_res.scalar_one_or_none()
+    if enc and analysis.triage_level:
+        enc.triage_level = analysis.triage_level
+        if analysis.emergency_red_flags:
+            enc.red_flags = analysis.emergency_red_flags
+        await db.commit()
 
     return {
         "status": "success",
         "encounter_id": body.encounter_id,
         "narrative_received": body.narrative_text,
         "extracted_entities": {
-            "chief_complaints": extracted_complaints,
-            "duration": duration_val,
-            "severity": severity_val,
-            "radiation": "left_arm_and_jaw" if has_radiation else "none",
-            "diaphoresis": "yes" if has_sweating else "no",
+            "chief_complaints": analysis.primary_complaints,
+            "organ_systems": analysis.organ_systems,
+            "recommended_specialty": analysis.recommended_specialty,
+            "triage_level": analysis.triage_level,
+            "duration": analysis.duration,
+            "severity": analysis.severity,
+            "emergency_red_flags": analysis.emergency_red_flags,
+            "medication_status": analysis.medication_status,
         },
-        "ai_followup_question": followup_q,
-        "ai_followup_audio_text": followup_q,
-        "answers_recorded_count": 3 + (1 if has_radiation else 0) + (1 if has_sweating else 0),
+        "ai_followup_question": analysis.targeted_followup_question,
+        "ai_followup_audio_text": analysis.targeted_followup_audio,
         "is_complete": False,
     }
