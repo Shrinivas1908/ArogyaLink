@@ -893,10 +893,31 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
                       })}
                     </div>
 
+                    {/* Additional Custom Symptoms input (combine voice/text with touch) */}
+                    <div className="p-3 bg-white rounded-2xl border border-[#E4EDE9] space-y-2">
+                      <label className="text-[11px] font-bold text-[#12322B] flex items-center justify-between">
+                        <span>📝 Additional / Other Symptoms (अन्य लक्षण लिखें या बोलें)</span>
+                        <span className="text-[10px] text-[#5F7D74] font-normal">Optional</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Also feeling severe acidity and dizziness..."
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        className="w-full p-2.5 bg-[#FAF7F2] border border-[#E4EDE9] rounded-xl text-xs font-semibold text-[#12322B] outline-none focus:border-[#12322B]"
+                      />
+                    </div>
+
                     <button
-                      disabled={submitting || selectedMulti.length === 0}
-                      onClick={() => handleSubmitAnswer(selectedMulti)}
-                      className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
+                      disabled={submitting || (selectedMulti.length === 0 && !textInput.trim())}
+                      onClick={() => {
+                        const finalValues = [...selectedMulti]
+                        if (textInput.trim()) {
+                          finalValues.push(textInput.trim())
+                        }
+                        handleSubmitAnswer(finalValues)
+                      }}
+                      className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50 active:scale-95"
                     >
                       {submitting ? t('saving_answer', lang) : t('submit_continue', lang)}
                     </button>

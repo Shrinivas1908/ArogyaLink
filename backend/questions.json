@@ -14,10 +14,16 @@
         { "value": "chest_pain", "label": "Chest pain or tightness" },
         { "value": "breathlessness", "label": "Difficulty breathing / Shortness of breath" },
         { "value": "fever", "label": "Fever or chills" },
-        { "value": "headache", "label": "Severe headache" },
+        { "value": "headache", "label": "Severe headache or migraine" },
         { "value": "abdominal_pain", "label": "Stomach or abdominal pain" },
-        { "value": "dizziness", "label": "Dizziness or fainting" },
-        { "value": "other", "label": "Other general discomfort" }
+        { "value": "nausea_vomiting", "label": "Nausea or vomiting" },
+        { "value": "acidity_gerd", "label": "Severe acidity / heartburn / indigestion" },
+        { "value": "cough_cold", "label": "Persistent cough or throat pain" },
+        { "value": "back_joint_pain", "label": "Backache, knee or joint pain" },
+        { "value": "dizziness_vertigo", "label": "Dizziness or fainting" },
+        { "value": "skin_rash_itching", "label": "Skin rash, allergy or itching" },
+        { "value": "burning_urination", "label": "Burning sensation in urination" },
+        { "value": "other", "label": "Other health concern" }
       ],
       "next_map": {
         "_default": "q_duration"
