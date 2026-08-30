@@ -136,13 +136,52 @@ export default function VoiceHealthAssistant() {
     }
   }
 
-  const speakText = (text) => {
+  // Preload high-definition voices on mount
+  useEffect(() => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = currentLangMeta.speechCode
-      window.speechSynthesis.speak(utterance)
+      window.speechSynthesis.getVoices()
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices()
+      }
     }
+  }, [])
+
+  const speakText = (text) => {
+    if (!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+
+    // Clean text of emojis and markdown so speech synthesizer pronounces clearly
+    const cleanText = text
+      .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+      .replace(/[*_#~`]/g, '')
+      .trim()
+
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.lang = currentLangMeta.speechCode
+    utterance.rate = 0.88 // Comfortable, clear pacing
+    utterance.pitch = 1.02 // Natural acoustic pitch
+    utterance.volume = 1.0
+
+    // Intelligent Neural / Natural Voice Selection
+    const voices = window.speechSynthesis.getVoices()
+    if (voices && voices.length > 0) {
+      const targetLang = currentLangMeta.speechCode.toLowerCase()
+      const baseLang = targetLang.split('-')[0]
+
+      // Prioritize High-Quality Neural/Natural Indian Voices (Google / Microsoft Natural)
+      const bestVoice =
+        voices.find((v) => v.lang.toLowerCase().startsWith(baseLang) && (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online'))) ||
+        voices.find((v) => v.lang.toLowerCase() === targetLang) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith(baseLang)) ||
+        voices.find((v) => v.name.includes('Google') || v.name.includes('Natural')) ||
+        voices[0]
+
+      if (bestVoice) {
+        utterance.voice = bestVoice
+      }
+    }
+
+    window.speechSynthesis.speak(utterance)
   }
 
   return (

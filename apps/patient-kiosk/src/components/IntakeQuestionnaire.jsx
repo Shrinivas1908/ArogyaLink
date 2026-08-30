@@ -103,6 +103,38 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
     }
   }
 
+  // ── High-Definition Crystal-Clear Voice Output ──────────────────────────
+  const playClearVoice = (text, targetSpeechCode) => {
+    if (!('speechSynthesis' in window) || !text) return
+    window.speechSynthesis.cancel()
+
+    const clean = text
+      .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+      .replace(/[*_#~`]/g, '')
+      .trim()
+
+    const utterance = new SpeechSynthesisUtterance(clean)
+    const code = targetSpeechCode || langObj.speechCode || 'en-IN'
+    utterance.lang = code
+    utterance.rate = 0.88
+    utterance.pitch = 1.02
+    utterance.volume = 1.0
+
+    const voices = window.speechSynthesis.getVoices()
+    if (voices && voices.length > 0) {
+      const base = code.toLowerCase().split('-')[0]
+      const best =
+        voices.find((v) => v.lang.toLowerCase().startsWith(base) && (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Online'))) ||
+        voices.find((v) => v.lang.toLowerCase() === code.toLowerCase()) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith(base)) ||
+        voices.find((v) => v.name.includes('Google') || v.name.includes('Natural')) ||
+        voices[0]
+      if (best) utterance.voice = best
+    }
+
+    window.speechSynthesis.speak(utterance)
+  }
+
   // ── Process Full Multi-Sentence (50+ word) Voice Narrative ──────────────
   const handleProcessVoiceNarrative = async (textToProcess) => {
     const text = (textToProcess || narrativeInput || spokenTranscript).trim()
@@ -124,12 +156,9 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
       setNarrativeExtracted(data.extracted_entities)
       setAiFollowup(data.ai_followup_question)
 
-      // Speak the dynamic follow-up question in the patient's language
-      if ('speechSynthesis' in window && data.ai_followup_audio_text) {
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(data.ai_followup_audio_text)
-        utterance.lang = langObj.speechCode || 'en-IN'
-        window.speechSynthesis.speak(utterance)
+      // Speak the dynamic follow-up question in the patient's language with crystal clarity
+      if (data.ai_followup_audio_text) {
+        playClearVoice(data.ai_followup_audio_text, langObj.speechCode)
       }
     } catch (err) {
       setError(err.message)
@@ -742,15 +771,8 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
                             </span>
                             <button
                               type="button"
-                              onClick={() => {
-                                if ('speechSynthesis' in window) {
-                                  window.speechSynthesis.cancel()
-                                  const u = new SpeechSynthesisUtterance(aiFollowup)
-                                  u.lang = langObj.speechCode || 'en-IN'
-                                  window.speechSynthesis.speak(u)
-                                }
-                              }}
-                              className="text-[10px] font-bold text-emerald-800 underline"
+                              onClick={() => playClearVoice(aiFollowup, langObj.speechCode)}
+                              className="text-[10px] font-bold text-emerald-800 underline hover:text-emerald-950"
                             >
                               🔊 Repeat Question
                             </button>
