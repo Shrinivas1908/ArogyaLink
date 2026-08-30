@@ -4,7 +4,7 @@ echo Arogya Link — Local Development Stack
 echo ==========================================
 
 :: 1. Start Backend FastAPI
-start "ArogyaLink - Backend" cmd /k "cd backend && uvicorn app.main:app --reload --port 8000"
+start "ArogyaLink - Backend" cmd /k "cd backend && python -m uvicorn app.main:app --reload --port 8000"
 echo [OK] Started Backend FastAPI on port 8000
 
 :: 2. Start Patient Kiosk React App

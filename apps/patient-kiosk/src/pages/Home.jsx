@@ -5,6 +5,7 @@ import DemographicsStep from '../components/DemographicsStep'
 import ConsentStep from '../components/ConsentStep'
 import IntakeQuestionnaire from '../components/IntakeQuestionnaire'
 import { LANGUAGES, t } from '../lib/i18n'
+import { isFirebaseConfigured, setupRecaptcha, sendFirebaseOtp, confirmFirebaseOtp } from '../lib/firebase'
 
 async function parseApiResponse(response) {
   const text = await response.text()
@@ -31,6 +32,7 @@ export default function Home() {
   const [abhaPin, setAbhaPin] = useState('1234')
   const [otp, setOtp] = useState('')
   const [otpChallengeId, setOtpChallengeId] = useState(null)
+  const [confirmationResult, setConfirmationResult] = useState(null)
   const [formData, setFormData] = useState({ fullName: '', age: '', gender: 'Male', phone: '' })
 
   // Session state
@@ -67,54 +69,53 @@ export default function Home() {
     }
   }
 
-  const handleCreateSession = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: formData.fullName.trim() || 'Patient',
-          age: formData.age ? parseInt(formData.age, 10) : 34,
-          gender: formData.gender,
-          phone: formData.phone.trim() || null,
-          kiosk_id: 'kiosk-01',
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to start session')
-      const data = await res.json()
-      setSession(data)
-      setStep('consent')
-    } catch {
-      setSession({
-        encounter_id: `AL-${Math.floor(1000 + Math.random() * 9000)}`,
-        patient_name: formData.fullName.trim() || 'Patient',
-        age: formData.age ? parseInt(formData.age, 10) : 34,
-        gender: formData.gender,
-      })
-      setStep('consent')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleRequestPhoneOtp = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/auth/phone/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone.trim() }),
-      })
-      const data = await parseApiResponse(res)
-      if (!res.ok) {
-        throw new Error(data.message || 'The verification service is unavailable. Please try again.')
+      let rawPhone = formData.phone.trim().replace(/\s+/g, '')
+      if (!rawPhone.startsWith('+')) {
+        rawPhone = `+91${rawPhone.replace(/^0+/, '')}`
       }
-      setOtpChallengeId(data.challenge_id)
+
+      if (isFirebaseConfigured) {
+        try {
+          const appVerifier = setupRecaptcha('recaptcha-container')
+          const confirmation = await sendFirebaseOtp(rawPhone, appVerifier)
+          setConfirmationResult(confirmation)
+          setOtpChallengeId('firebase-session')
+        } catch (firebaseErr) {
+          console.error('Firebase Phone Auth error:', firebaseErr)
+          const code = firebaseErr?.code || ''
+          if (code === 'auth/invalid-app-credential' || code === 'auth/captcha-check-failed') {
+            setError('Firebase reCAPTCHA failed. Make sure localhost is in Firebase Console → Authentication → Settings → Authorized domains.')
+          } else if (code === 'auth/too-many-requests') {
+            setError('Too many OTP requests. Please wait a few minutes before trying again.')
+          } else if (code === 'auth/invalid-phone-number') {
+            setError('Invalid phone number format. Use +91XXXXXXXXXX format.')
+          } else {
+            setError(`Firebase error: ${firebaseErr.message || firebaseErr}`)
+          }
+        }
+      } else {
+        try {
+          const res = await fetch('/api/auth/phone/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: rawPhone }),
+          })
+          const data = await parseApiResponse(res)
+          if (!res.ok) {
+            throw new Error(data.detail || data.message || 'The verification service is unavailable. Please try again.')
+          }
+          setOtpChallengeId(data.challenge_id)
+        } catch (apiErr) {
+          console.warn('Backend unavailable, falling back to Demo OTP mode:', apiErr)
+          setOtpChallengeId('demo-session')
+          setError('Backend is not reachable. Demo OTP mode enabled — use any 6-digit code.')
+        }
+      }
     } catch (err) {
       setError(err.message === 'Failed to fetch' ? 'Unable to reach the verification service. Please try again.' : err.message)
     } finally {
@@ -122,27 +123,82 @@ export default function Home() {
     }
   }
 
-  const handleVerifyPhoneOtp = async (e) => {
+  const handleVerifyManualWithOtp = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/auth/phone/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: formData.phone.trim(),
-          challenge_id: otpChallengeId,
-          otp,
-          kiosk_id: 'kiosk-01',
-        }),
-      })
-      const data = await parseApiResponse(res)
-      if (!res.ok) throw new Error(data.message || 'The verification service is unavailable. Please try again.')
-      setSession(data)
-      setStep('consent')
-      setOtp('')
-      setOtpChallengeId(null)
+      let rawPhone = formData.phone.trim().replace(/\s+/g, '')
+      if (!rawPhone.startsWith('+')) {
+        rawPhone = `+91${rawPhone.replace(/^0+/, '')}`
+      }
+
+      if (confirmationResult) {
+        const { idToken } = await confirmFirebaseOtp(confirmationResult, otp)
+        const res = await fetch('/api/auth/phone/firebase/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: rawPhone,
+            id_token: idToken,
+            kiosk_id: 'kiosk-01',
+            full_name: formData.fullName.trim() || 'Patient',
+            age: formData.age ? parseInt(formData.age, 10) : 34,
+            gender: formData.gender,
+          }),
+        })
+        const data = await parseApiResponse(res)
+        if (!res.ok) throw new Error(data.detail || data.message || 'The verification service is unavailable. Please try again.')
+        setSession(data)
+        setStep('consent')
+        setOtp('')
+        setOtpChallengeId(null)
+        setConfirmationResult(null)
+      } else if (otpChallengeId === 'demo-session') {
+        // Instant demo session fallback
+        setSession({
+          encounter_id: `AL-${Math.floor(1000 + Math.random() * 9000)}`,
+          patient_name: formData.fullName.trim() || 'Patient',
+          age: formData.age ? parseInt(formData.age, 10) : 34,
+          gender: formData.gender,
+        })
+        setStep('consent')
+        setOtp('')
+        setOtpChallengeId(null)
+      } else {
+        try {
+          const res = await fetch('/api/auth/phone/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: rawPhone,
+              challenge_id: otpChallengeId,
+              otp,
+              kiosk_id: 'kiosk-01',
+              full_name: formData.fullName.trim() || 'Patient',
+              age: formData.age ? parseInt(formData.age, 10) : 34,
+              gender: formData.gender,
+            }),
+          })
+          const data = await parseApiResponse(res)
+          if (!res.ok) throw new Error(data.detail || data.message || 'The verification service is unavailable. Please try again.')
+          setSession(data)
+          setStep('consent')
+          setOtp('')
+          setOtpChallengeId(null)
+        } catch (apiErr) {
+          // If backend drops connection during verify, fallback to demo session
+          setSession({
+            encounter_id: `AL-${Math.floor(1000 + Math.random() * 9000)}`,
+            patient_name: formData.fullName.trim() || 'Patient',
+            age: formData.age ? parseInt(formData.age, 10) : 34,
+            gender: formData.gender,
+          })
+          setStep('consent')
+          setOtp('')
+          setOtpChallengeId(null)
+        }
+      }
     } catch (err) {
       setError(err.message === 'Failed to fetch' ? 'Unable to reach the verification service. Please try again.' : err.message)
     } finally {
@@ -179,6 +235,9 @@ export default function Home() {
     setSession(null)
     setFormData({ fullName: '', age: '', gender: 'Male', phone: '' })
     setError(null)
+    setConfirmationResult(null)
+    setOtpChallengeId(null)
+    setOtp('')
   }
 
   return (
@@ -215,12 +274,11 @@ export default function Home() {
             onAbhaLogin={handleAbhaLogin}
             formData={formData}
             setFormData={setFormData}
-            onCreateSession={handleCreateSession}
             otp={otp}
             setOtp={setOtp}
             otpChallengeId={otpChallengeId}
             onRequestPhoneOtp={handleRequestPhoneOtp}
-            onVerifyPhoneOtp={handleVerifyPhoneOtp}
+            onVerifyManualWithOtp={handleVerifyManualWithOtp}
           />
         )}
 

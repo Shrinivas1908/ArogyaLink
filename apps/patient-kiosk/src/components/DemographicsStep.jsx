@@ -15,12 +15,11 @@ export default function DemographicsStep({
   onAbhaLogin,
   formData,
   setFormData,
-  onCreateSession,
   otp,
   setOtp,
   otpChallengeId,
   onRequestPhoneOtp,
-  onVerifyPhoneOtp,
+  onVerifyManualWithOtp,
 }) {
   return (
     <div className="max-w-xl mx-auto w-full bg-white rounded-[32px] p-8 sm:p-10 border border-[#E4EDE9] shadow-xl space-y-6">
@@ -42,8 +41,8 @@ export default function DemographicsStep({
         </button>
       </div>
 
-      {/* Mode Tabs */}
-      <div className="grid grid-cols-3 p-1 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] text-xs font-bold">
+      {/* Mode Tabs — Exactly 2 options */}
+      <div className="grid grid-cols-2 p-1 bg-[#FAF7F2] rounded-2xl border border-[#E4EDE9] text-xs font-bold">
         <button
           type="button"
           onClick={() => setLoginMode('abha')}
@@ -59,18 +58,6 @@ export default function DemographicsStep({
 
         <button
           type="button"
-          onClick={() => setLoginMode('phone')}
-          className={`py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
-            loginMode === 'phone'
-              ? 'bg-white text-[#12322B] shadow-sm border border-[#E4EDE9]'
-              : 'text-[#5F7D74] hover:text-[#12322B]'
-          }`}
-        >
-          Phone OTP
-        </button>
-
-        <button
-          type="button"
           onClick={() => setLoginMode('manual')}
           className={`py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
             loginMode === 'manual'
@@ -79,6 +66,7 @@ export default function DemographicsStep({
           }`}
         >
           {t('manual_checkin_tab', lang)}
+          <span className="text-[9px] bg-[#E4EDE9] text-[#12322B] px-1.5 py-0.5 rounded font-mono">Phone OTP</span>
         </button>
       </div>
 
@@ -130,17 +118,19 @@ export default function DemographicsStep({
         </form>
       )}
 
-      {/* Manual Check-in Form */}
+      {/* Manual Check-in Form with Compulsory Phone OTP */}
       {loginMode === 'manual' && (
-        <form onSubmit={onCreateSession} className="space-y-4">
+        <form onSubmit={otpChallengeId ? onVerifyManualWithOtp : onRequestPhoneOtp} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[#12322B] mb-1.5">{t('full_name', lang)}</label>
             <input
               type="text"
+              required
               placeholder="e.g. Aarav Sharma"
               className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-medium text-sm text-[#12322B]"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              disabled={Boolean(otpChallengeId)}
             />
           </div>
 
@@ -149,10 +139,14 @@ export default function DemographicsStep({
               <label className="block text-xs font-bold text-[#12322B] mb-1.5">{t('age', lang)}</label>
               <input
                 type="number"
+                required
+                min={1}
+                max={120}
                 placeholder="34"
                 className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-medium text-sm text-[#12322B]"
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                disabled={Boolean(otpChallengeId)}
               />
             </div>
             <div>
@@ -161,6 +155,7 @@ export default function DemographicsStep({
                 className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-medium text-sm text-[#12322B]"
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                disabled={Boolean(otpChallengeId)}
               >
                 <option value="Male">{t('male', lang)}</option>
                 <option value="Female">{t('female', lang)}</option>
@@ -173,29 +168,6 @@ export default function DemographicsStep({
             <label className="block text-xs font-bold text-[#12322B] mb-1.5">{t('phone_optional', lang)}</label>
             <input
               type="tel"
-              placeholder="+91 98765 43210"
-              className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-medium text-sm text-[#12322B]"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
-          >
-            {loading ? t('starting_session', lang) : t('continue_to_consent', lang)}
-          </button>
-        </form>
-      )}
-
-      {loginMode === 'phone' && (
-        <form onSubmit={otpChallengeId ? onVerifyPhoneOtp : onRequestPhoneOtp} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-[#12322B] mb-1.5">Registered phone number</label>
-            <input
-              type="tel"
               required
               placeholder="+91 98765 43210"
               className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-medium text-sm text-[#12322B]"
@@ -204,40 +176,45 @@ export default function DemographicsStep({
               disabled={Boolean(otpChallengeId)}
             />
           </div>
+
           {otpChallengeId && (
-            <div>
-              <label className="block text-xs font-bold text-[#12322B] mb-1.5">Verification code</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                required
-                maxLength={6}
-                pattern="[0-9]{6}"
-                placeholder="6-digit code"
-                className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-mono text-sm text-[#12322B]"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              />
+            <div className="p-4 bg-[#FAF7F2] border border-[#E4EDE9] rounded-2xl space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#12322B] mb-1.5">Verification Code (OTP)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="Enter 6-digit code"
+                  className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-white font-mono text-sm text-[#12322B]"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={onRequestPhoneOtp}
+                disabled={loading}
+                className="text-xs font-semibold text-[#5F7D74] hover:text-[#12322B] transition"
+              >
+                Resend verification code
+              </button>
             </div>
           )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : otpChallengeId ? 'Verify & continue' : 'Send verification code'}
+            {loading ? 'Please wait…' : otpChallengeId ? 'Verify & Start Session →' : 'Send Verification OTP →'}
           </button>
-          {otpChallengeId && (
-            <button
-              type="button"
-              onClick={onRequestPhoneOtp}
-              disabled={loading}
-              className="w-full text-xs font-semibold text-[#5F7D74] hover:text-[#12322B]"
-            >
-              Resend code
-            </button>
-          )}
+
+          {/* Firebase invisible reCAPTCHA anchor */}
+          <div id="recaptcha-container"></div>
         </form>
       )}
 

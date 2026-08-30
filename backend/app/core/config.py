@@ -11,6 +11,7 @@ Per Phase 0 plan:
 
 from __future__ import annotations
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,15 +56,13 @@ class Settings(BaseSettings):
     paddleocr_lang: str = "en"
     voice_timeout_secs: int = 10
 
-    # ── Phone OTP ───────────────────────────────────────────────────
+    # ── Phone OTP / Firebase ─────────────────────────────────────────
+    firebase_project_id: str = ""
     otp_hash_secret: str = ""
     otp_expiry_secs: int = 300
     otp_resend_cooldown_secs: int = 60
     otp_max_attempts: int = 5
     otp_max_requests_per_hour: int = 5
-    twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
-    twilio_from_number: str = ""
 
 
 # Single shared instance — import this everywhere
