@@ -81,8 +81,6 @@ class OTPService:
             "message": "OTP sent successfully.",
             "phone_masked": f"+91 {clean_phone[:2]}******{clean_phone[-2:]}",
             "expires_in_seconds": OTP_TTL_SECONDS,
-            # In development/sandbox environments, return code for instant testing
-            "dev_otp": otp_code if settings.app_env != "production" or not sms_sent else None,
         }
 
     async def verify_otp(self, phone: str, otp_entered: str) -> dict[str, Any]:

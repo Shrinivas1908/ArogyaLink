@@ -4,9 +4,9 @@ export default function PatientHealthLocker() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authMethod, setAuthMethod] = useState('otp') // 'otp' | 'abha'
-  const [mobileNumber, setMobileNumber] = useState('9876543210')
-  const [otpCode, setOtpCode] = useState('202688')
-  const [abhaId, setAbhaId] = useState('91-2345-6789-0123')
+  const [mobileNumber, setMobileNumber] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [abhaId, setAbhaId] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [authError, setAuthError] = useState('')
   const [isAuthenticating, setIsAuthenticating] = useState(false)
@@ -114,19 +114,12 @@ export default function PatientHealthLocker() {
       const data = await res.json()
       if (res.ok && data.success) {
         setOtpSent(true)
-        if (data.dev_otp) {
-          setOtpCode(data.dev_otp)
-          setServerOtpMsg(`✓ Verification code sent to ${data.phone_masked}. (Dev OTP: ${data.dev_otp})`)
-        } else {
-          setServerOtpMsg(`✓ Verification code sent via SMS to ${data.phone_masked}.`)
-        }
+        setServerOtpMsg(`✓ Verification OTP sent via SMS to ${data.phone_masked}. Please enter the 6-digit code received on your phone.`)
       } else {
         setAuthError(data.detail || data.message || 'Failed to send OTP. Please try again.')
       }
     } catch {
-      // Fallback for offline demo
-      setOtpSent(true)
-      setServerOtpMsg('✓ OTP code generated for local testing.')
+      setAuthError('Network error while requesting OTP. Please ensure your backend is reachable.')
     } finally {
       setIsAuthenticating(false)
     }
@@ -264,7 +257,9 @@ export default function PatientHealthLocker() {
                       placeholder="Enter 6-digit OTP"
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-center tracking-widest text-base font-mono font-bold text-slate-900 bg-white focus:border-slate-900 focus:ring-2 focus:ring-slate-100 outline-none transition"
                     />
-                    <p className="text-[11px] text-emerald-600 font-medium text-center">✓ Demo OTP: <strong>202688</strong></p>
+                    {serverOtpMsg && (
+                      <p className="text-[11px] text-emerald-700 font-medium text-center">{serverOtpMsg}</p>
+                    )}
                   </div>
                 )}
 
