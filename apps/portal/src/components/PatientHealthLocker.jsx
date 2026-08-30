@@ -15,107 +15,82 @@ export default function PatientHealthLocker() {
   const [activeTab, setActiveTab] = useState('all') // 'all' | 'prescriptions' | 'labs' | 'summaries'
   const [selectedDocPreview, setSelectedDocPreview] = useState(null)
 
-  // Authenticated patient data
-  const authenticatedPatient = {
-    patient_id: 'p-001',
-    full_name: 'Ananya Sharma',
-    age: 54,
-    gender: 'Female',
-    phone: '+91 98765 43210',
-    abha_number: '91-2345-6789-0123',
-    abha_address: 'ananya.sharma@abdm',
-    linked_facility: 'Rural Primary Health Centre - PHC 01',
-    documents: [
-      {
-        id: 'doc-001',
-        title: 'Emergency Cardiology Prescription & Meds',
-        category: 'prescriptions',
-        type_label: 'Prescription Scan',
-        date: '28 Aug 2026',
-        doctor: 'Dr. Vivek R. (Cardiology Consult)',
-        badge: 'Active Meds',
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        file_name: '2026-08-28_Cardiology_Rx.jpg',
-        file_size: '240 KB',
-        extracted_items: [
-          { name: 'Tab. Aspirin', dosage: '300mg', instructions: '1 Stat post-meal' },
-          { name: 'Tab. Clopidogrel', dosage: '300mg', instructions: '1 Stat' },
-          { name: 'Tab. Atorvastatin', dosage: '80mg', instructions: '1 OD Night (30 days)' },
-        ],
-        summary: 'Prescription scanned at Kiosk 01. OCR extracted 3 medications with 99.1% confidence score.',
-      },
-      {
-        id: 'doc-002',
-        title: '12-Lead Electrocardiogram (ECG) Report',
-        category: 'labs',
-        type_label: 'Cardiac Diagnostic',
-        date: '28 Aug 2026',
-        doctor: 'Dr. Vivek R.',
-        badge: 'Critical Finding',
-        badgeColor: 'bg-red-100 text-red-800 border-red-200',
-        file_name: '2026-08-28_12Lead_ECG.pdf',
-        file_size: '1.2 MB',
-        extracted_items: [
-          { name: 'ST Segment Elevation', dosage: '1.8 mm (V2-V4)', instructions: 'Critical' },
-          { name: 'Heart Rate', dosage: '102 bpm', instructions: 'Sinus Tachycardia' },
-          { name: 'T-Wave Inversion', dosage: 'Lead aVL', instructions: 'Abnormal' },
-        ],
-        summary: 'Digital ECG trace scanned and verified. Shows anterior wall STEMI pattern.',
-      },
-      {
-        id: 'doc-003',
-        title: 'Pulmonary OPD Prescription & Inhaler Advice',
-        category: 'prescriptions',
-        type_label: 'Prescription Scan',
-        date: '12 Jun 2026',
-        doctor: 'Dr. Neha Patel (General Medicine)',
-        badge: 'Completed',
-        badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
-        file_name: '2026-06-12_Pulmonary_Rx.jpg',
-        file_size: '185 KB',
-        extracted_items: [
-          { name: 'Inhaler Budecort', dosage: '200mcg', instructions: '2 puffs BD (14 days)' },
-          { name: 'Tab. Montelukast', dosage: '10mg', instructions: '1 OD Bedtime (10 days)' },
-          { name: 'Tab. Autrin (Iron)', dosage: '1 Capsule', instructions: '1 OD After lunch' },
-        ],
-        summary: 'Follow-up prescription for post-viral respiratory wheeze.',
-      },
-      {
-        id: 'doc-004',
-        title: 'Complete Blood Count (CBC) & Anemia Screen',
-        category: 'labs',
-        type_label: 'Hematology Panel',
-        date: '12 Jun 2026',
-        doctor: 'District Pathology Lab',
-        badge: 'Mild Anemia',
-        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-        file_name: '2026-06-12_CBC_Panel.jpg',
-        file_size: '310 KB',
-        extracted_items: [
-          { name: 'Hemoglobin (Hb)', dosage: '10.4 g/dL', instructions: 'Low (Ref: 12.0-15.5)' },
-          { name: 'TLC (WBC)', dosage: '7,800 /uL', instructions: 'Normal' },
-          { name: 'Platelet Count', dosage: '2.4 Lakhs', instructions: 'Normal' },
-        ],
-        summary: 'Verified automated hematology analyzer extraction.',
-      },
-      {
-        id: 'doc-005',
-        title: 'Annual Wellness & Glycemic Consultation Summary',
-        category: 'summaries',
-        type_label: 'Clinical Discharge Summary',
-        date: '05 Feb 2026',
-        doctor: 'Dr. Ankit Verma (Medical Officer)',
-        badge: 'Signed Record',
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        file_name: '2026-02-05_AnnualCheck.pdf',
-        file_size: '420 KB',
-        extracted_items: [
-          { name: 'HbA1c Glucose', dosage: '6.2%', instructions: 'Pre-diabetic' },
-          { name: 'Blood Pressure', dosage: '138/86 mmHg', instructions: 'Stage 1 HTN' },
-        ],
-        summary: 'Annual comprehensive health checkup letter with digital physician signature.',
-      },
-    ],
+  // Authenticated patient data from database
+  const [authenticatedPatient, setAuthenticatedPatient] = useState(null)
+  const [loadingRecords, setLoadingRecords] = useState(false)
+
+  // Fetch real patient data from database upon authentication
+  const fetchRealPatientRecords = async (phoneOrAbha) => {
+    setLoadingRecords(true)
+    try {
+      const res = await fetch(`/api/patients/lookup?query=${encodeURIComponent(phoneOrAbha)}`)
+      if (res.ok) {
+        const patients = await res.json()
+        if (patients && patients.length > 0) {
+          const p = patients[0]
+          // Fetch full history & documents bundle
+          try {
+            const histRes = await fetch(`/api/patients/${p.id}/history`)
+            if (histRes.ok) {
+              const histData = await histRes.json()
+              setAuthenticatedPatient({
+                patient_id: p.id,
+                full_name: p.full_name || 'Registered Patient',
+                age: p.age || 45,
+                gender: p.gender || 'Not specified',
+                phone: p.phone || phoneOrAbha,
+                abha_number: p.abha_number || 'Not linked',
+                abha_address: p.abha_address || 'Not registered',
+                linked_facility: 'Rural Primary Health Centre',
+                documents: histData.reports || [],
+                encounters: histData.encounters || [],
+              })
+              return
+            }
+          } catch {
+            // No history bundle
+          }
+
+          setAuthenticatedPatient({
+            patient_id: p.id,
+            full_name: p.full_name || 'Registered Patient',
+            age: p.age || '—',
+            gender: p.gender || '—',
+            phone: p.phone || phoneOrAbha,
+            abha_number: p.abha_number || 'Not linked',
+            abha_address: p.abha_address || 'Not registered',
+            linked_facility: 'Rural Primary Health Centre',
+            documents: [],
+            encounters: [],
+          })
+          return
+        }
+      }
+      // Clean state for newly registered phone
+      setAuthenticatedPatient({
+        patient_id: 'new-user',
+        full_name: 'Verified Patient',
+        phone: phoneOrAbha,
+        abha_number: authMethod === 'abha' ? phoneOrAbha : 'Not linked',
+        abha_address: 'Not registered',
+        linked_facility: 'ArogyaLink Network PHC',
+        documents: [],
+        encounters: [],
+      })
+    } catch {
+      setAuthenticatedPatient({
+        patient_id: 'new-user',
+        full_name: 'Verified Patient',
+        phone: phoneOrAbha,
+        abha_number: 'Not linked',
+        abha_address: 'Not registered',
+        linked_facility: 'ArogyaLink Network PHC',
+        documents: [],
+        encounters: [],
+      })
+    } finally {
+      setLoadingRecords(false)
+    }
   }
 
   const [serverOtpMsg, setServerOtpMsg] = useState('')
@@ -163,6 +138,8 @@ export default function PatientHealthLocker() {
     setAuthError('')
 
     const cleanPhone = mobileNumber.replace(/\D/g, '')
+    const idToLookup = authMethod === 'abha' ? abhaId : cleanPhone
+
     try {
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
@@ -172,6 +149,7 @@ export default function PatientHealthLocker() {
       const data = await res.json()
       if (res.ok && data.success) {
         setIsAuthenticated(true)
+        fetchRealPatientRecords(idToLookup)
       } else {
         setAuthError(data.detail || data.message || 'Invalid or expired OTP.')
       }
@@ -179,6 +157,7 @@ export default function PatientHealthLocker() {
       // Fallback verification if backend is temporarily unreachable
       if (otpCode.length === 6) {
         setIsAuthenticated(true)
+        fetchRealPatientRecords(idToLookup)
       } else {
         setAuthError('Please enter a valid 6-digit OTP code.')
       }
@@ -192,10 +171,12 @@ export default function PatientHealthLocker() {
     setOtpSent(false)
     setServerOtpMsg('')
     setAuthError('')
+    setAuthenticatedPatient(null)
     setSelectedDocPreview(null)
   }
 
-  const filteredDocs = authenticatedPatient.documents.filter((doc) => {
+  const patientDocs = authenticatedPatient?.documents || []
+  const filteredDocs = patientDocs.filter((doc) => {
     if (activeTab === 'all') return true
     return doc.category === activeTab
   })

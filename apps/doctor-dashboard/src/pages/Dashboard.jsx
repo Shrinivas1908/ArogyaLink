@@ -7,57 +7,11 @@ import EncounterDetail from '../components/EncounterDetail'
 import LiveEscalationsView from '../components/LiveEscalationsView'
 import EscalationToast from '../components/EscalationToast'
 
-const DEFAULT_ENCOUNTERS = [
-  {
-    id: 'AL-2048',
-    patient_name: 'Ananya Sharma',
-    age: 54,
-    chief_complaint: 'Severe chest discomfort',
-    triage_level: 'CRITICAL',
-    status: 'Awaiting Review',
-    time: 'Now',
-    rule_desc: 'Rule RF-CARD-001 triggered: acute chest distress with left shoulder radiation.',
-    patient: { full_name: 'Ananya Sharma', age: 54, gender: 'Female' },
-  },
-  {
-    id: 'AL-2047',
-    patient_name: 'Rohan Mehta',
-    age: 31,
-    chief_complaint: 'Persistent fever & chills',
-    triage_level: 'URGENT',
-    status: 'Awaiting Review',
-    time: '8 min',
-    rule_desc: 'Rule RF-INF-002: high-grade fever > 102°F persisting > 3 days.',
-    patient: { full_name: 'Rohan Mehta', age: 31, gender: 'Male' },
-  },
-  {
-    id: 'AL-2046',
-    patient_name: 'Meera Joshi',
-    age: 67,
-    chief_complaint: 'Hypertension follow-up & BP review',
-    triage_level: 'ROUTINE',
-    status: 'Completed',
-    time: '18 min',
-    patient: { full_name: 'Meera Joshi', age: 67, gender: 'Female' },
-  },
-  {
-    id: 'AL-2045',
-    patient_name: 'Kabir Singh',
-    age: 42,
-    chief_complaint: 'Acute dyspnea on exertion',
-    triage_level: 'URGENT',
-    status: 'Awaiting Review',
-    time: '26 min',
-    rule_desc: 'Rule RF-RESP-001: progressive breathlessness with wheeze.',
-    patient: { full_name: 'Kabir Singh', age: 42, gender: 'Male' },
-  },
-]
-
 export default function Dashboard() {
   const { user, signOut } = useAuth()
   const [activeNav, setActiveNav] = useState('overview')
-  const [encounters, setEncounters] = useState(DEFAULT_ENCOUNTERS)
-  const [selectedEncounter, setSelectedEncounter] = useState(DEFAULT_ENCOUNTERS[0])
+  const [encounters, setEncounters] = useState([])
+  const [selectedEncounter, setSelectedEncounter] = useState(null)
   const [filterSeverity, setFilterSeverity] = useState('ALL')
   const [showToast, setShowToast] = useState(false)
   const [actionMessage, setActionMessage] = useState(null)
@@ -66,11 +20,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFolderDate, setSelectedFolderDate] = useState('2026-08-28')
 
-  const [escalationAlert, setEscalationAlert] = useState({
-    encounter_id: 'AL-2048',
-    patient_name: 'Ananya Sharma',
-    symptoms: 'Severe discomfort + breathing difficulty + radiating pain.',
-  })
+  const [escalationAlert, setEscalationAlert] = useState(null)
 
   // 1. Fetch live queue
   const fetchQueue = async () => {
@@ -83,12 +33,15 @@ export default function Dashboard() {
       if (res.ok) {
         const data = await res.json()
         const fetched = Array.isArray(data) ? data : data.encounters || []
+        setEncounters(fetched)
         if (fetched.length > 0) {
-          setEncounters(fetched)
+          setSelectedEncounter((prev) => prev ? fetched.find(e => e.id === prev.id) || fetched[0] : fetched[0])
+        } else {
+          setSelectedEncounter(null)
         }
       }
     } catch {
-      // Retain default encounters
+      // Retain clean state
     }
   }
 

@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 /**
  * Doctor Dashboard — Login Page
- * Connects inputs to supabase.auth.signInWithPassword.
- * Redirects directly to dashboard if already authenticated.
+ * Doctor & Clinical Reviewer Sign-In with credentials validation.
  */
 export default function Login() {
-  const { session } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const { session, signInWithCredentials } = useAuth()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('doctor@arogyalink.in')
+  const [password, setPassword] = useState('Doctor@2026')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
 
@@ -25,33 +24,31 @@ export default function Login() {
     setLoading(true)
     setErrorMsg(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setErrorMsg(error.message)
+    try {
+      await signInWithCredentials(email, password)
+      navigate('/', { replace: true })
+    } catch (err) {
+      setErrorMsg(err.message || 'Authentication failed. Please check credentials.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="relative py-12 px-6 flex items-center justify-center min-h-[calc(100vh-100px)] overflow-hidden">
+    <div className="relative py-12 px-6 flex items-center justify-center min-h-screen bg-[#FAF6F0] overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-sky-200/50 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-[#EFE8DE]/60 blur-[100px] rounded-full pointer-events-none" />
 
-      <div className="glass-card rounded-3xl p-8 sm:p-10 w-full max-w-md space-y-6 relative z-10 border border-sky-200 shadow-xl">
+      <div className="bg-white rounded-3xl p-8 sm:p-10 w-full max-w-md space-y-6 relative z-10 border border-[#EFE8DE] shadow-xl">
         <div className="text-center space-y-2">
-          <div className="flex justify-center mb-2">
-            <img
-              src="/logo.jpg"
-              alt="ArogyaLink Logo"
-              className="h-16 w-auto object-contain drop-shadow-md"
-            />
+          <div className="w-14 h-14 rounded-2xl bg-[#6E3E30] text-white mx-auto flex items-center justify-center text-2xl font-serif font-bold shadow-md shadow-[#6E3E30]/20">
+            🩺
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Clinical Staff Sign In</h1>
-          <p className="text-slate-500 text-xs font-semibold">ArogyaLink · Doctor & Reviewer Portal</p>
+          <h1 className="text-2xl font-serif font-bold tracking-tight text-[#2E1B15]">
+            Doctor & Reviewer Portal
+          </h1>
+          <p className="text-[#7C6C62] text-xs font-semibold">
+            ArogyaLink · Clinical Decision Workspace
+          </p>
         </div>
 
         {errorMsg && (
@@ -63,22 +60,22 @@ export default function Login() {
         <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Email Address
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#523F38] mb-1">
+                Doctor ID / Email
               </label>
               <input
                 id="input-email"
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="doctor@arogyalink.in"
-                className="w-full px-4 py-3 border border-sky-200 rounded-xl text-sm font-medium text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 shadow-sm"
+                className="w-full px-4 py-3 border border-[#EFE8DE] rounded-xl text-xs font-bold text-[#2E1B15] bg-[#FAF7F2] outline-none focus:border-[#6E3E30] focus:bg-white shadow-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Password
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#523F38] mb-1">
+                Password / Security PIN
               </label>
               <input
                 id="input-password"
@@ -87,7 +84,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border border-sky-200 rounded-xl text-sm font-medium text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 shadow-sm"
+                className="w-full px-4 py-3 border border-[#EFE8DE] rounded-xl text-xs font-bold text-[#2E1B15] bg-[#FAF7F2] outline-none focus:border-[#6E3E30] focus:bg-white shadow-sm"
               />
             </div>
           </div>
@@ -96,14 +93,15 @@ export default function Login() {
             id="btn-sign-in"
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition"
+            className="w-full py-3.5 rounded-xl bg-[#2E1B15] hover:bg-[#3D251D] disabled:opacity-50 text-[#FAF6F0] font-bold text-xs shadow-md transition active:scale-95"
           >
-            {loading ? 'Authenticating…' : 'Sign In to Workspace →'}
+            {loading ? 'Authenticating Clinical Credentials…' : 'Sign In as Doctor →'}
           </button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-400 font-medium border-t border-sky-100">
-          Authorized hospital & clinic personnel only.
+        <div className="pt-3 text-center text-xs text-[#8C7A70] font-medium border-t border-[#EFE8DE] space-y-1">
+          <p>🔒 Strictly authorized medical officers & reviewers only.</p>
+          <p className="text-[11px] text-[#7C6C62]">All clinical actions are audit-logged under NMC guidelines.</p>
         </div>
       </div>
     </div>

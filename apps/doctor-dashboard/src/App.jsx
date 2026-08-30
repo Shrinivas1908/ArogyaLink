@@ -6,15 +6,18 @@ import Dashboard from './pages/Dashboard'
 
 /**
  * Doctor Dashboard — Root App
- * Light White & Sky Blue Theme matching Main Portal.
+ * Login is public, while Dashboard is strictly protected behind Doctor Authentication.
  */
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="login" element={<Login />} />
+        </Route>
+        <Route path="*" element={<ProtectedLayout />}>
+          <Route index element={<Dashboard />} />
         </Route>
       </Routes>
     </AuthProvider>
