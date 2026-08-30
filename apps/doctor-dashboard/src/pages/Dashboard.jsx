@@ -326,7 +326,9 @@ export default function Dashboard() {
           <LiveEscalationsView
             alert={escalationAlert}
             onOpenEncounter={() => {
-              handleSelectEncounter(escalationAlert.encounter_id)
+              if (escalationAlert?.encounter_id) {
+                handleSelectEncounter(escalationAlert.encounter_id)
+              }
               setActiveNav('overview')
             }}
           />
