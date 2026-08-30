@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     abdm_client_secret: str = ""
     abdm_env: str = "sandbox"
     paddleocr_lang: str = "en"
+    ocr_api_url: str = ""  # Cloud OCR API Endpoint (e.g. https://api.ocr.space/parse/image or custom endpoint)
+    ocr_api_key: str = ""  # Cloud OCR API Key
     voice_timeout_secs: int = 10
     fast2sms_api_key: str = ""
 

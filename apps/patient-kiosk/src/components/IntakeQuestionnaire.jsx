@@ -305,24 +305,19 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
         body: formData,
       })
       if (res.ok) {
-        setOcrResult(await res.json())
+        const data = await res.json()
+        setOcrResult(data)
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setOcrResult({
+          status: 'failed',
+          message: errData.message || 'Unable to detect clear prescription text. Please take a clearer photo and try again.',
+        })
       }
-    } catch {
+    } catch (err) {
       setOcrResult({
-        status: 'success',
-        document_id: 'DOC-CRD-8491',
-        document_type: 'Prescription & Investigation Record',
-        raw_text: 'Rx: Tab. Aspirin 75mg OD, Tab. Atorvastatin 20mg HS, Tab. Pantoprazole 40mg OD.',
-        detected_medications: [
-          { name: 'Tab. Aspirin', dosage: '75mg', frequency: 'OD (After breakfast)', duration: '30 days', type: 'Antiplatelet' },
-          { name: 'Tab. Atorvastatin', dosage: '20mg', frequency: 'HS (Bedtime)', duration: '30 days', type: 'Statin' },
-          { name: 'Tab. Pantoprazole', dosage: '40mg', frequency: 'OD (Empty Stomach)', duration: '14 days', type: 'PPI' },
-        ],
-        lab_results: [
-          { test_name: 'Total Cholesterol', value: '218', unit: 'mg/dL', reference: '< 200 mg/dL', flag: 'BORDERLINE HIGH' },
-          { test_name: 'Fasting Blood Glucose', value: '112', unit: 'mg/dL', reference: '70 - 99 mg/dL', flag: 'ELEVATED' },
-        ],
-        confidence_score: 0.96,
+        status: 'failed',
+        message: 'Network or server error while scanning document. Please try again.',
       })
     } finally {
       setOcrLoading(false)
@@ -1147,7 +1142,38 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
             </div>
           )}
 
-          {ocrResult && (
+          {ocrResult && ocrResult.status === 'failed' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3 animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h4 className="text-sm font-bold text-amber-900">
+                    OCR Could Not Detect Readable Text (पर्ची पढ़ी नहीं जा सकी)
+                  </h4>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    {ocrResult.message || 'The uploaded document image is blurry or unreadable. No synthetic fake data was generated.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <label
+                  htmlFor="ocr-file-upload-input"
+                  className="px-4 py-2 rounded-xl bg-amber-900 hover:bg-amber-800 text-white text-xs font-bold cursor-pointer transition inline-block"
+                >
+                  📷 Take Clearer Photo / Re-upload
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setOcrResult(null)}
+                  className="px-3 py-2 rounded-xl bg-white border border-amber-200 text-amber-900 text-xs font-bold hover:bg-amber-100/50 transition"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
+          {ocrResult && ocrResult.status === 'success' && (
             <div className="bg-[#FAF7F2] rounded-2xl p-5 border border-[#E4EDE9] space-y-4 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#12322B] uppercase">

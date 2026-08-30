@@ -12,10 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.session_deps import validate_consented_encounter
+from app.engines.question_engine import QuestionEngine
 from app.services.ocr_service import OCRService
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 ocr_service = OCRService()
+q_engine = QuestionEngine()
 
 
 @router.post("/process")
@@ -29,6 +31,16 @@ async def process_document_ocr(
     file_bytes = await file.read()
     filename = file.filename or ""
     result = ocr_service.process_prescription(encounter_id, file_bytes, filename=filename)
+
+    # Auto-link extracted active medications into clinical intake answers
+    if result and result.get("detected_medications"):
+        med_list = [f"{m.get('name')} {m.get('dosage', '')}".strip() for m in result["detected_medications"]]
+        try:
+            await q_engine.record_answer(encounter_id, "q_medications", "yes", db)
+            await q_engine.record_answer(encounter_id, "q_medication_details", med_list, db)
+        except Exception:
+            pass
+
     return result
 
 
