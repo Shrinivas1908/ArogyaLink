@@ -255,3 +255,66 @@ async def process_voice_narrative(
         "ai_followup_audio_text": analysis.targeted_followup_audio,
         "is_complete": False,
     }
+
+
+class SubmitVoiceFollowupRequest(BaseModel):
+    encounter_id: str
+    followup_answer: str
+    language: str = "en"
+
+
+@router.post("/submit-voice-followup")
+async def submit_voice_followup(
+    body: SubmitVoiceFollowupRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Process patient's answer to the AI follow-up question.
+    Merges any newly mentioned symptoms (e.g. 'feeling acidity') with initial complaints,
+    and updates medical history and medication status.
+    """
+    await validate_consented_encounter(body.encounter_id, db)
+    
+    # Fetch existing answers
+    existing_answers = await engine.get_answers_dict(body.encounter_id, db)
+    existing_complaints = existing_answers.get("q_chief_complaint", [])
+    if isinstance(existing_complaints, str):
+        existing_complaints = [existing_complaints]
+
+    # Merge follow-up response
+    merge_res = clinical_intake_service.merge_followup_response(
+        existing_complaints=existing_complaints,
+        followup_text=body.followup_answer,
+        language=body.language,
+    )
+
+    # Persist merged chief complaints so all symptoms (e.g. Nausea, Vomiting, Acidity) appear together
+    await engine.record_answer(body.encounter_id, "q_chief_complaint", merge_res["merged_complaints"], db)
+    
+    if merge_res.get("medical_history"):
+        await engine.record_answer(body.encounter_id, "q_medical_history", merge_res["medical_history"], db)
+    else:
+        await engine.record_answer(body.encounter_id, "q_medical_history", [body.followup_answer.strip()], db)
+
+    if merge_res.get("medication_status"):
+        await engine.record_answer(body.encounter_id, "q_medications", merge_res["medication_status"], db)
+
+    # Update encounter status if needed
+    enc_stmt = select(Encounter).where(Encounter.id == uuid.UUID(body.encounter_id))
+    enc_res = await db.execute(enc_stmt)
+    enc = enc_res.scalar_one_or_none()
+    if enc and merge_res.get("additional_red_flags"):
+        existing_rf = enc.red_flags or []
+        for rf in merge_res["additional_red_flags"]:
+            if rf not in existing_rf:
+                existing_rf.append(rf)
+        enc.red_flags = existing_rf
+        await db.commit()
+
+    return {
+        "status": "success",
+        "encounter_id": body.encounter_id,
+        "merged_complaints": merge_res["merged_complaints"],
+        "medical_history": merge_res.get("medical_history"),
+        "is_complete": True,
+    }

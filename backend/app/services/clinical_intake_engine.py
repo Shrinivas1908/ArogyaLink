@@ -177,10 +177,16 @@ class ComprehensiveClinicalIntakeService:
             matched_keywords = [kw for kw in data["keywords"] if kw in text_lower]
             if matched_keywords:
                 detected_systems.add(system_name)
-                # Add human readable symptom term
-                matched_clean = matched_keywords[0].title()
-                if matched_clean not in detected_complaints:
-                    detected_complaints.append(matched_clean)
+                # Extract all distinct matched symptom terms
+                matched_keywords.sort(key=len, reverse=True)
+                added_for_system = set()
+                for kw in matched_keywords:
+                    # Avoid adding redundant sub-tokens if already covered
+                    if not any(kw in existing and kw != existing for existing in added_for_system):
+                        added_for_system.add(kw)
+                        kw_title = kw.title()
+                        if kw_title not in detected_complaints:
+                            detected_complaints.append(kw_title)
 
                 # Check specialty & triage level
                 if data["default_triage"] == "CRITICAL":
@@ -190,7 +196,6 @@ class ComprehensiveClinicalIntakeService:
 
                 # Check for system red flags
                 for rf in data.get("red_flags", []):
-                    # Check individual tokens of red flag
                     rf_tokens = rf.split()
                     if any(t in text_lower for t in rf_tokens if len(t) > 3):
                         if rf not in detected_red_flags:
@@ -322,6 +327,32 @@ class ComprehensiveClinicalIntakeService:
         system_q = questions.get(system, questions["Default"])
         q_text = system_q.get(lang_key, system_q.get("en", questions["Default"]["en"]))
         return {"text": q_text, "audio": q_text}
+
+    def merge_followup_response(
+        self,
+        existing_complaints: list[str],
+        followup_text: str,
+        language: str = "en",
+    ) -> dict[str, Any]:
+        """
+        Parse patient follow-up response and merge any newly mentioned symptoms (e.g. 'feeling acidity')
+        into chief complaints and associated symptoms so nothing is lost.
+        """
+        followup_analysis = self.analyze_patient_narrative(followup_text, language=language)
+        
+        merged_complaints = list(existing_complaints)
+        for c in followup_analysis.primary_complaints:
+            if c not in ["General Health Assessment", "General Clinical Discomfort"] and c not in merged_complaints:
+                merged_complaints.append(c)
+
+        return {
+            "merged_complaints": merged_complaints,
+            "additional_systems": followup_analysis.organ_systems,
+            "medical_history": followup_analysis.medical_history_noted,
+            "medication_status": followup_analysis.medication_status,
+            "additional_red_flags": followup_analysis.emergency_red_flags,
+            "severity": followup_analysis.severity,
+        }
 
 
 clinical_intake_service = ComprehensiveClinicalIntakeService()

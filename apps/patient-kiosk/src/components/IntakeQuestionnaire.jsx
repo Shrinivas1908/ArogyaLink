@@ -796,14 +796,13 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
                                 const val = (narrativeFollowupAnswer || 'None / No regular medications').trim()
                                 setSubmitting(true)
                                 try {
-                                  await fetch('/api/intake/answer', {
+                                  await fetch('/api/intake/submit-voice-followup', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
                                       encounter_id: encounterId,
-                                      question_id: 'q_medical_history',
-                                      answer_value: [val],
-                                      source: 'voice',
+                                      followup_answer: val,
+                                      language: lang || 'en',
                                     }),
                                   })
                                   setIsComplete(true)
