@@ -260,10 +260,18 @@ async def _build_encounter_bundle(encounter_id: str, db: AsyncSession) -> dict[s
 
     answers = await q_engine.get_answers_dict(encounter_id, db)
     complaint = answers.get("q_chief_complaint", None)
+    complaint_candidates = []
     if isinstance(complaint, list):
-        complaint_str = ", ".join(complaint).replace("_", " ").title()
-    elif complaint:
-        complaint_str = str(complaint).replace("_", " ").title()
+        complaint_candidates = [
+            str(c).replace("_", " ").strip()
+            for c in complaint
+            if str(c).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake", "null"]
+        ]
+    elif complaint and str(complaint).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake", "null"]:
+        complaint_candidates = [str(complaint).replace("_", " ").strip()]
+
+    if complaint_candidates:
+        complaint_str = ", ".join(complaint_candidates).title()
     else:
         complaint_str = "Severe chest discomfort" if enc.triage_level == "CRITICAL" else "Clinical Intake Review"
 

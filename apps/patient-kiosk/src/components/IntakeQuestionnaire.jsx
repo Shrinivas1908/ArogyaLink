@@ -786,17 +786,38 @@ export default function IntakeQuestionnaire({ encounterId, lang = 'en', onComple
                               type="text"
                               value={narrativeFollowupAnswer}
                               onChange={(e) => setNarrativeFollowupAnswer(e.target.value)}
-                              placeholder="Speak or type your answer to the follow-up..."
+                              placeholder="Speak or type your answer (e.g. No medicine / कोई दवा नहीं)..."
                               className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs outline-none"
                             />
                             <button
                               type="button"
-                              onClick={() => {
-                                handleSubmitAnswer(narrativeFollowupAnswer || 'completed_voice_intake')
+                              disabled={submitting}
+                              onClick={async () => {
+                                const val = (narrativeFollowupAnswer || 'None / No regular medications').trim()
+                                setSubmitting(true)
+                                try {
+                                  await fetch('/api/intake/answer', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      encounter_id: encounterId,
+                                      question_id: 'q_medical_history',
+                                      answer_value: [val],
+                                      source: 'voice',
+                                    }),
+                                  })
+                                  setIsComplete(true)
+                                  if (onComplete) onComplete()
+                                } catch {
+                                  setIsComplete(true)
+                                  if (onComplete) onComplete()
+                                } finally {
+                                  setSubmitting(false)
+                                }
                               }}
-                              className="px-4 py-1.5 rounded-lg bg-[#12322B] text-white text-xs font-bold"
+                              className="px-4 py-1.5 rounded-lg bg-[#12322B] text-white text-xs font-bold transition hover:bg-[#1E4A40] active:scale-95 disabled:opacity-50"
                             >
-                              Submit & Continue
+                              {submitting ? 'Saving...' : '✓ Submit & Complete'}
                             </button>
                           </div>
                         </div>

@@ -81,11 +81,30 @@ class GeminiClient:
         language: str = "en",
     ) -> dict[str, Any]:
         """Generate high-precision structured clinical summary optimized for easy human understanding."""
-        complaint = intake_answers.get("q_chief_complaint", ["General discomfort"])
+        complaint = intake_answers.get("q_chief_complaint", None)
+        complaint_candidates = []
         if isinstance(complaint, list):
-            complaint_str = ", ".join(complaint).replace("_", " ").title()
-        else:
-            complaint_str = str(complaint).replace("_", " ").title()
+            complaint_candidates = [
+                str(c).replace("_", " ").strip()
+                for c in complaint
+                if str(c).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake", "null"]
+            ]
+        elif complaint and str(complaint).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake", "null"]:
+            complaint_candidates = [str(complaint).replace("_", " ").strip()]
+
+        if not complaint_candidates:
+            for k, v in intake_answers.items():
+                if k in ["q_associated_symptoms", "q_symptoms", "q_narrative_complaints"] and v:
+                    if isinstance(v, list):
+                        complaint_candidates.extend([
+                            str(item).replace("_", " ").strip()
+                            for item in v
+                            if str(item).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake"]
+                        ])
+                    elif str(v).strip().lower() not in ["no", "none", "false", "n/a", "completed_voice_intake"]:
+                        complaint_candidates.append(str(v).replace("_", " ").strip())
+
+        complaint_str = ", ".join(complaint_candidates).title() if complaint_candidates else "Clinical Symptom Review"
 
         duration = str(intake_answers.get("q_duration", "Acute / recent onset")).replace("_", " ")
         severity = str(intake_answers.get("q_severity", "Moderate to Severe")).replace("_", " ").title()
