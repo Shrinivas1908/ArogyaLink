@@ -6,7 +6,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8.2-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.3-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Gemini](https://img.shields.io/badge/Google_Gemini-3.6%2F3.7_Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
-[![Multimodal Vision OCR](https://img.shields.io/badge/OCR-Gemini_Vision_%2B_PaddleOCR-8B5CF6.svg)](#-prescription--document-ocr-engine)
+[![OCR](https://img.shields.io/badge/OCR-Gemini_Vision_%2B_Tesseract-8B5CF6.svg)](#-prescription--document-ocr-engine)
 [![Bhashini](https://img.shields.io/badge/Bhashini-ULCA_Speech_AI-FF9933.svg)](https://bhashini.gov.in)
 [![Indic Languages](https://img.shields.io/badge/Multilingual-7%2B_Indic_Languages-10B981.svg)](#-voice-touch--multilingual-architecture)
 [![DPDP Act](https://img.shields.io/badge/Privacy-DPDP_Act_2023_Compliant-0284C7.svg)](#-security-encryption--data-privacy)
@@ -18,15 +18,16 @@
 ## 📖 Table of Contents
 - [Overview](#-overview)
 - [Key Features & Modules](#-key-features--modules)
+- [Universal 12-Organ-System Clinical AI Engine](#-universal-12-organ-system-clinical-ai-engine)
 - [Prescription & Document OCR Engine](#-prescription--document-ocr-engine)
 - [Voice, Touch & Multilingual Architecture](#-voice-touch--multilingual-architecture)
+- [Organized FHIR R4 Bundle Directory](#-organized-fhir-r4-bundle-directory)
 - [Security, Encryption & Data Privacy](#-security-encryption--data-privacy)
 - [UI/UX Design System & Ergonomics](#-uiux-design-system--ergonomics)
 - [System Architecture](#-system-architecture)
 - [Tech Stack](#-tech-stack)
-- [Prerequisites](#-prerequisites)
-- [Installation & Local Setup](#-installation--local-setup)
-- [One-Click Startup](#-one-click-startup)
+- [Quickstart & Docker Execution](#-quickstart--docker-execution)
+- [Cloud Deployment (Render & Vercel)](#-cloud-deployment-option-b)
 - [API Endpoints](#-api-endpoints)
 - [Project Directory Structure](#-project-directory-structure)
 - [License](#-license)
@@ -35,127 +36,123 @@
 
 ## 🌟 Overview
 
-**ArogyaLink** is a comprehensive clinical decision-support and patient triage platform tailored for high-volume Indian Outpatient Departments (OPDs), rural health centers, and modern hospitals. 
+**ArogyaLink** is an enterprise-grade clinical decision-support and patient triage platform tailored for high-volume Outpatient Departments (OPDs), Community Health Centers (CHCs), AYUSH clinics, and tertiary hospitals.
 
-It bridges the gap between fast multilingual patient intake and doctor workflow by providing:
+It bridges the gap between rapid, multilingual patient intake and focused doctor workflow by providing:
 1. **Multimodal Patient Check-in**: Regional Indian voice recognition and touch-first kiosk questionnaire with DPDP Act 2023 compliant digital consent.
-2. **Authentic Prescription & Lab OCR**: Real document entity extraction using **Gemini Multimodal Vision**, **PyMuPDF**, and **BioClinical-NER**.
-3. **Traceable AI Clinical Summaries**: Powered by **Gemini 3.6/3.7 Flash** and **Groq Llama-3.3-70b**, delivering **1-sentence Quick Doctor Snapshots**, **Plain-Language Patient Explanations**, and clinical differential diagnoses.
-4. **Contradiction Detection Engine**: Automatically identifies logical mismatches between reported symptoms and uploaded prescription medications.
-5. **Doctor-in-the-Loop Oversight**: Clinical review dashboard with audit logs, overrides, and **HL7 FHIR R4** export to Ayushman Bharat Digital Mission (ABDM).
+2. **Universal 12-Organ-System Clinical AI**: Extracts symptoms, red flags, duration, and severity across all medical disciplines and automatically synthesizes targeted live clinical follow-up questions.
+3. **Multi-Turn Narrative Merging**: Follow-up answers (e.g. *"feeling acidity"*) are automatically parsed and merged with primary complaints (e.g. *"nausea and vomiting"*) so nothing is lost in clinical summaries.
+4. **Authentic Prescription & Lab OCR**: Real document entity extraction using **Gemini 3.6-Flash Multimodal Vision**, **Tesseract OCR with OpenCV adaptive binarization**, **PyMuPDF**, and **BioClinical-NER** with zero synthetic mock data.
+5. **Organized FHIR R4 Bundle Directory**: Interactive 2-column directory with live schema inspector, 1-click clipboard copying, and batch export conformant with ABDM.
+6. **Doctor OPD Dashboard**: Real-time queue prioritization (`CRITICAL`, `URGENT`, `ROUTINE`), AYUSH drug-herb interaction checks, digital Rx generator, and 1-click encounter management.
 
 ---
 
 ## 🚀 Key Features & Modules
 
-### 1. 🩺 Doctor Clinical Dashboard (`http://localhost:5174`)
+### 1. 🩺 Doctor OPD Clinical Dashboard (`http://localhost/doctor/` or Port 5174)
 - **Live Triaged Queue**: Real-time prioritization of incoming encounters into `CRITICAL`, `URGENT`, and `ROUTINE`.
 - **Traceable Clinical Synthesis**:
   - **⚡ Quick Doctor Snapshot**: 1-sentence high-yield summary for instant doctor grasp.
-  - **🗣️ Patient-Friendly Explanation**: Clear plain-language explanation without confusing medical jargon.
-  - **Structured Differentials**: Likelihood badges (`High`, `Moderate`, `Low`) with clinical rationales.
+  - **🗣️ Patient-Friendly Explanation**: Plain-language explanation for patients and families.
+  - **Structured Differentials**: Likelihood badges (`High`, `Moderate`, `Low`) with clinical reasoning.
   - **Action Checklist**: Recommended vitals check, 12-lead ECG, and priority lab orders.
-- **Rx OCR Sub-tab**: Visualizes detected medications (`dosage`, `frequency`, `duration`), diagnostic lab tables, and verbatim raw transcribed text.
-- **🌿 AYUSH Dashavidha Module**: Integrates traditional Ayurvedic Prakriti, Agni, and Ahara-Vihara assessments.
-- **🔍 Contradiction Validation**: Cross-checks patient symptoms against OCR prescription records to prevent medical errors.
-- **⏰ Automated Reminders**: Schedules WhatsApp and SMS medication reminders.
-- **Doctor Oversight**: Approve & sign records with SHA-256 audit logs, rationale overrides, and ABHA ID linkage.
+- **Rx OCR Sub-tab**: Visualizes detected medications (`dosage`, `frequency`, `duration`), diagnostic lab tables, and verbatim transcribed text.
+- **🌿 AYUSH Drug-Herb Interaction Checker**: Real-time safety validation preventing adverse interactions between Ayurvedic/Herbal formulations and Allopathic prescriptions.
+- **📁 Organized FHIR R4 Bundle Directory**: Interactive JSON inspector and ABDM export vault.
+- **🗑️ Encounter Queue Management**: Clear individual completed encounters or reset the entire OPD queue with 1 click.
 
-### 2. 📱 Multilingual Patient Touch & Voice Kiosk (`http://localhost:5173`)
-- **Touch-First Self-Service Intake**: Large high-contrast touch targets, visual symptom selector tiles, and low-literacy friendly layout designed for busy OPD waiting rooms.
-- **🎙️ Real-Time Regional Voice Input**: Web Speech API & Bhashini ULCA speech-to-text with live audio waveform visualization and interim transcription.
-- **🔊 Multilingual Text-to-Speech (TTS)**: Reads questions aloud in native regional languages to guide illiterate or elderly patients.
-- **🌐 7+ Indian Languages**: Instant switching between Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, and English.
-- **📄 Document & Prescription Scanner**: Upload camera photos or PDFs of old prescriptions and lab reports for instant on-kiosk entity preview.
-- **🪪 ABHA ID & DPDP Consent**: Seamless ABHA authentication and DPDP Act 2023 compliant digital consent capture prior to clinical intake.
+### 2. 📱 Multilingual Patient Touch & Voice Kiosk (`http://localhost/kiosk/` or Port 5173)
+- **Mandatory Patient Verification**: Enforces full patient name capture with dedicated **"🎙️ Speak Name (बोलें)"** voice button.
+- **Hybrid Touch + Voice Intake**: Large touch chips for all common OPD symptoms combined with a custom voice/text field to capture nuanced symptoms together.
+- **🎙️ 50+ Word Spoken Narrative Intake**: Patients speak freely about symptoms; the AI extracts primary complaints and poses dynamic, targeted clinical follow-up questions.
+- **🔊 Crystal-Clear Natural Voice Synthesis**: Automatic selection of High-Definition Neural/Natural Indian voices (`Google हिन्दी`, `Microsoft Swara Natural`, `Google मराठी`) with 0.88x pacing and emoji/markdown sanitization.
+- **📄 Document & Prescription Scanner**: Upload camera photos or PDFs of old prescriptions and lab reports for instant entity extraction.
+- **🪪 ABHA ID & DPDP Consent**: Seamless ABHA authentication and DPDP Act 2023 compliant digital consent capture.
 
-### 3. 🌐 Unified Showcase Portal (`http://localhost:5175`)
-- Interactive doctor-patient workflow demo with dual-screen simulation.
-- Live queue inspection, FHIR R4 JSON bundle viewer, and responsive architecture showcase.
+### 3. 🌐 Unified Showcase Portal (`http://localhost/` or Port 5175)
+- Public landing page, AYUSH hospital directory, appointment booking, and interactive live voice triage assistant.
+
+---
+
+## 🫀 Universal 12-Organ-System Clinical AI Engine
+
+ArogyaLink implements a comprehensive clinical ontology engine (`clinical_intake_engine.py`) covering all major medical organ systems:
+
+| Organ System | Specialties Covered | Example Matched Symptoms | Emergency Red Flags |
+| :--- | :--- | :--- | :--- |
+| **Cardiovascular** | Cardiology / Emergency Medicine | Chest pain, pressure, left arm pain, palpitations | Crushing chest pain radiating to jaw/left arm, syncope |
+| **Respiratory** | Pulmonology / Chest Medicine | Breathlessness, wheezing, cough with sputum, hemoptysis | Severe stridor, cyanosis, acute respiratory distress |
+| **Gastrointestinal** | Gastroenterology / General Surgery | Stomach pain, vomiting, nausea, acidity, GERD, diarrhea | Rigid acute abdomen, hematemesis, melena |
+| **Neurological** | Neurology / General Medicine | Severe headache, migraine, dizziness, vertigo, seizures | Thunderclap headache, facial asymmetry, limb weakness |
+| **Infectious & Febrile** | Internal Medicine / Infectious Diseases | Fever, chills, rigors, body ache, sore throat, burning urine | Petechial rash, altered sensorium, extreme rigors |
+| **Musculoskeletal** | Orthopedics / Rheumatology | Joint pain, backache, swelling, knee pain, sprain | Open fracture, sudden loss of limb sensation |
+| **Endocrine & Metabolic** | Endocrinology / Diabetology | Extreme thirst, frequent urination, weight loss, heat intolerance | Diabetic ketoacidosis signs, severe hypoglycemia |
+| **Genitourinary & Renal** | Urology / Nephrology | Flank pain, blood in urine, reduced urine output, dysuria | Anuria > 12h, gross hematuria with clots |
+| **Dermatological** | Dermatology / Allergy | Generalized rash, severe itching, hives, blisters | Rapidly spreading rash with mucosal involvement |
+| **Pediatric** | Pediatrics | High fever in infant, persistent crying, refusal to feed | Lethargy, poor feeding, sunken fontanelle |
+| **Obstetric & Gynecological** | OB/GYN | Lower abdominal cramps, missed period, abnormal bleeding | Severe pelvic pain with syncope, heavy bleeding |
+| **ENT & Ophthalmic** | ENT / Ophthalmology | Ear discharge, tinnitus, eye redness, blurred vision | Sudden painless vision loss, chemical exposure |
 
 ---
 
 ## 📄 Prescription & Document OCR Engine
 
-ArogyaLink incorporates a multi-tier clinical document processing pipeline engineered to ingest complex, noisy Indian prescriptions, camera snapshots, and digital diagnostic lab PDFs:
+ArogyaLink incorporates an enterprise multi-tier clinical document processing pipeline engineered to ingest complex, noisy Indian prescriptions, camera snapshots, and digital diagnostic lab PDFs:
 
 ```
-┌───────────────────────────┐
-│ Uploaded Rx Image or PDF  │
-└─────────────┬─────────────┘
-              │
-              ├───► [Primary] Google Gemini 3.6/3.7 Multimodal Vision (Zero-shot OCR + Clinical Schema)
-              │
-              ├───► [Secondary] PyMuPDF (Direct PDF Text & Table Stream Extraction)
-              │
-              └───► [Tertiary Fallback] PaddleOCR + BioClinical-NER v2.4 (Local Deterministic Baseline)
-                            │
-                            ▼
-              ┌───────────────────────────────────────────┐
-              │     Structured Clinical Output Schema     │
-              │  • Verbatim Raw Text Transcribed          │
-              │  • Detected Medications & Strengths       │
-              │  • Posology: Frequency, Timing & Duration │
-              │  • Lab Panels & Abnormality Flags         │
-              │  • MD5 Doc Hash + SHA-256 Audit Cache     │
-              └───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                 Uploaded Rx Image or PDF                    │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+            ┌──────────────────┴──────────────────┐
+            ▼                                     ▼
+   [Is PDF Document?]                    [Is Image File?]
+            │                                     │
+   ┌────────┴────────┐                   ┌────────┴────────┐
+   ▼                 ▼                   ▼                 ▼
+PyMuPDF        BioClinical-NER     Gemini 3.6-Flash    Tesseract OCR + OpenCV
+(Direct PDF)   (Entity Extractor)  (Multimodal AI)     (Adaptive CLAHE Binarization)
+            │                                     │
+            └──────────────────┬──────────────────┘
+                               ▼
+        ┌──────────────────────────────────────────────┐
+        │       100% Honest Clinical JSON Output       │
+        │ • Verbatim Raw Transcribed Text              │
+        │ • Detected Medications, Dosages & Timings    │
+        │ • Diagnostic Lab Investigations & Flags      │
+        │ • Auto-synced to Intake Answers (Zero Mock)  │
+        └──────────────────────────────────────────────┘
 ```
-
-### Extraction Capabilities & Ontologies
-
-| Entity Type | Extracted Fields | Example Clinical Output |
-| :--- | :--- | :--- |
-| **Prescription Medications** | Name, Dosage, Frequency, Duration, Pharmacological Category | `Tab. Vomilast` (10mg/10mg) — `BD (Twice daily)` x `5 Days` [`Antiemetic / Pregnancy-Safe`] |
-| **Cardio & Antibiotic Regimens** | Active compound, trade name, administration timing | `Cap. Zoclar 500` (500mg) — `OD (Morning - After Food)` x `7 Days` [`Macrolide Antibiotic`] |
-| **Diagnostic Lab Panels** | Test name, observed value, units, reference range, status | `Fasting Blood Sugar`: `138 mg/dL` (Ref: `70-99 mg/dL`) `[ELEVATED]` |
-| **Lipid & Metabolic Panels** | HbA1c, Serum Creatinine, Cholesterol, SGOT/SGPT | `HbA1c`: `7.2 %` (Ref: `< 5.7 %`) `[HIGH]` |
-| **Doctor Advice & Lifestyle** | Dietary constraints, bed rest, followup directives | `Take bed rest; avoid high sodium; review in 7 days` |
 
 ---
 
 ## 🗣️ Voice, Touch & Multilingual Architecture
 
-ArogyaLink is designed from the ground up for Indian public health realities:
-
 | Capability | Implementation & Technology | Highlights |
 | :--- | :--- | :--- |
-| **Speech-to-Text (ASR / STT)** | Web Speech API (`webkitSpeechRecognition`) + Bhashini ULCA ASR (`dhruva-api.bhashini.gov.in`) | Continuous interim transcription, auto speech detection, and graceful offline fallback |
-| **Voice Synthesis (TTS)** | Web Speech Synthesis API (`window.speechSynthesis`) | Reads clinical questions, options, and consent prompts in regional accents |
-| **Languages Supported** | Hindi (`hi-IN`), Bengali (`bn-IN`), Tamil (`ta-IN`), Telugu (`te-IN`), Marathi (`mr-IN`), Gujarati (`gu-IN`), Kannada (`kn-IN`), Malayalam (`ml-IN`), English (`en-IN`) | Full Indic script typography & localized symptom ontology |
-| **Touchscreen UX** | Ergonomic touch design (min 48px touch targets), single-tap symptom chips, accessible high-contrast UI | Zero typing required; fully operable via touch taps or voice dictation |
-| **i18n Translation Engine** | Dynamic client dictionary (`i18n.js`) + backend localized ontology | Instant client-side language switching without page reload |
+| **Speech-to-Text (ASR / STT)** | Web Speech API (`webkitSpeechRecognition`) + Bhashini ULCA ASR Pipeline | Continuous interim transcription, auto speech detection, and graceful offline fallback |
+| **Voice Synthesis (TTS)** | High-Definition Neural Voice Selector (`Google हिन्दी`, `Microsoft Swara Natural`, `Google मराठी`) | 0.88x speed pacing, sanitizes raw markdown/emojis for crystal-clear regional pronunciation |
+| **Languages Supported** | Hindi (`hi-IN`), Bengali (`bn-IN`), Tamil (`ta-IN`), Telugu (`te-IN`), Marathi (`mr-IN`), Gujarati (`gu-IN`), Kannada (`kn-IN`), Malayalam (`ml-IN`), English (`en-IN`) | Full Indic script typography & localized clinical symptom ontology |
+| **Hybrid Touch UX** | Ergonomic touch design (min 48px targets), multi-select symptom chips, custom voice/text add-on | Combines touched pills with spoken/typed notes seamlessly |
+
+---
+
+## 📁 Organized FHIR R4 Bundle Directory
+
+The Doctor Dashboard includes a dedicated **FHIR R4 Exports Directory** (`FHIRExportsView.jsx`):
+* **2-Column Workspace**: Encounter selector on the left, live syntax-highlighted FHIR R4 JSON schema inspector on the right.
+* **1-Click Actions**: One-click clipboard copy and `.json` file download for individual encounters or entire OPD batches.
+* **ABDM Sandbox Ready**: Standard `Bundle`, `Patient`, `Encounter`, `Condition`, `Observation`, and `MedicationStatement` resources.
 
 ---
 
 ## 🔒 Security, Encryption & Data Privacy
 
-Patient confidentiality and regulatory compliance are integral to the system design:
-
-- **🔐 End-to-End Encryption in Transit**: All communications across REST APIs and WebSockets are secured via TLS 1.3 / HTTPS encryption.
-- **📜 DPDP Act 2023 Compliant Consent**: Multi-stage explicit digital consent before data capture, including multilingual notices, purpose limitation, and patient revocation support.
-- **🛡️ Immutable Medico-Legal Audit Trail**: Every doctor action (approvals, rationale overrides, clinical edits) is logged with SHA-256 integrity, UTC timestamps, and physician IDs.
+- **🔐 End-to-End Encryption in Transit**: All communications secured via TLS 1.3 / HTTPS encryption.
+- **📜 DPDP Act 2023 Compliant Consent**: Multi-stage explicit digital consent before data capture.
+- **🛡️ Immutable Medico-Legal Audit Trail**: Every doctor action is logged with SHA-256 integrity, UTC timestamps, and physician IDs.
 - **🪪 ABHA & ABDM Privacy Boundaries**: Complies with Ayushman Bharat Digital Mission M1/M2/M3 privacy guidelines with tokenized patient health identifiers.
-- **🏥 FHIR R4 Data Integrity**: Patient encounters, observations, and prescription records are formatted as strictly validated HL7 FHIR R4 JSON bundles.
-- **🛡️ Environment & CORS Security**: Strict domain origin whitelisting (`CORS_ORIGINS`) and secret isolation via Pydantic BaseSettings.
-
----
-
-## 🎨 UI/UX Design System & Ergonomics
-
-ArogyaLink features an editorial, human-centered clinical design system engineered for both chaotic rural OPD kiosks and focused doctor workstations:
-
-- **Warm Editorial Theme**: Replaces sterile hospital greys with an organic, calming Warm Linen and Cream palette (`#FAF7F2`, `#FAF6F0`, `#12322B`, `#2E1B15`) that reduces screen glare and visual fatigue.
-- **Editorial Typography Hierarchy**:
-  - **Headers**: Sophisticated editorial serif (*Fraunces* / *Newsreader*) for clear visual anchor points.
-  - **Body & Data**: High-legibility modern sans-serif (*Plus Jakarta Sans* / *Inter*) for optimal readability of medical dosages and laboratory values.
-- **OPD Touch Ergonomics**:
-  - Minimum **48px–56px** tap targets optimized for capacitive touchscreens and tremors.
-  - Preset symptom selection chips enabling one-touch clinical entry without on-screen typing.
-  - Dynamic audio feedback waveforms indicating microphone activity in noisy OPD environments.
-- **Clinical Triage Visual Hierarchy**:
-  - Instant status badges: `CRITICAL` (High-contrast crimson), `URGENT` (Warm amber), `ROUTINE` (Calm emerald).
-  - Split-pane layout: Simultaneous viewing of AI diagnostic synthesis alongside original scanned prescription documents.
-  - Custom micro-scrollbars and tactile hover transitions (`hover:scale-[1.01]`, `active:scale-[0.99]`).
 
 ---
 
@@ -171,8 +168,8 @@ ArogyaLink features an editorial, human-centered clinical design system engineer
 │  Patient Kiosk (5173)   │ ───►  │   FastAPI Backend      │ ───►  │ Doctor Dashboard(5174) │
 │  - Touch & Voice Intake │       │   Port 8000            │       │ - Severity Triage      │
 │  - 7+ Indic Languages   │ ◄───  │   - Bhashini Voice STT │ ◄───  │ - AI Synthesis (HPI)   │
-│  - DPDP Consent Record  │       │   - OCR Parser (NER)   │       │ - Audit & Overrides    │
-│  - Prescription Upload  │       │   - Contradiction Eng  │       │ - FHIR R4 & ABHA Link  │
+│  - DPDP Consent Record  │       │   - OCR Engine (Tess)  │       │ - Audit & Overrides    │
+│  - Prescription Upload  │       │   - 12-System AI Model │       │ - FHIR R4 Bundle Vault │
 └─────────────────────────┘       │   - Queue & FHIR API   │       └────────────────────────┘
                                   │   - Security & Audit   │
 ┌─────────────────────────┐       └───────────▲────────────┘
@@ -186,118 +183,48 @@ ArogyaLink features an editorial, human-centered clinical design system engineer
 
 ### AI, Multimodal & Speech Processing
 - **LLM Synthesis & Triage**: Google Gemini 3.6/3.7 Flash Multimodal API, Groq Llama-3.3-70b, Pydantic v2
-- **Voice & Speech Recognition (STT)**: Web Speech API (`SpeechRecognition`) with continuous audio stream + Bhashini ULCA ASR Pipeline (`dhruva-api.bhashini.gov.in`) with local resilient fallback
-- **Voice Synthesis (TTS)**: Web Speech Synthesis API (`SpeechSynthesisUtterance`) for automated regional audio question reading
-- **Multilingual Localization (i18n)**: Indic translation engine supporting Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam & English
-- **Document OCR & Clinical NER**: PyMuPDF (`pymupdf`), Pillow, PaddleOCR, Regex Medical NER
-
-### Security, Privacy & Interoperability
-- **Data Protection**: DPDP Act 2023 Digital Consent Engine, TLS 1.3 in-transit data encryption
-- **Audit & Governance**: SHA-256 hashed doctor approval/override audit logger (`AuditService`)
-- **Health Standards**: HL7 FHIR R4 Bundle Generator, ABDM Sandbox Integration (ABHA M1/M2/M3)
-- **API Guardrails**: Strict CORS whitelisting, Pydantic v2 input sanitization, async non-blocking pipelines
+- **Voice Recognition (STT)**: Web Speech API with continuous audio stream + Bhashini ULCA ASR
+- **Voice Synthesis (TTS)**: Neural Indian voice selector with 0.88x pacing
+- **Document OCR & NER**: Gemini Multimodal Vision, Tesseract OCR (`pytesseract`), PyMuPDF (`pymupdf`), OpenCV CLAHE, BioClinical-NER
 
 ### Backend
-- **Framework**: Python 3.13+, FastAPI 0.115
-- **Server**: Uvicorn (ASGI) with real-time WebSocket notifications
+- **Framework**: Python 3.11+, FastAPI 0.115
 - **Database & ORM**: PostgreSQL / Supabase, SQLAlchemy 2.0 (AsyncPG), Alembic migrations
+- **Reverse Proxy / Gateway**: Nginx Gateway routing all apps through Port 80
 
-### Frontend, UI/UX & Kiosk
-- **Framework**: React 19.2, React Router v7
-- **Build Tool**: Vite 8.2 & Vite 6.4
-- **Design Tokens & Styling**: TailwindCSS v4 with `@layer base` Warm Linen & Cream Organic theme
+### Frontend & UI/UX
+- **Framework**: React 19.2, React Router v7, Vite 8.2
+- **Design Tokens**: TailwindCSS v4 with Warm Linen & Cream Organic theme
 - **Typography**: Google Fonts (*Fraunces*, *Newsreader*, *Plus Jakarta Sans*, *Inter*)
-- **Icons & Visuals**: Lucide-React, custom animated waveform indicators
-2```bash
-git clone https://github.com/Shrinivas1908/ArogyaLink.git
-cd ArogyaLink
-```
-
-### Step 2: Configure Environment Variables
-Copy `.env.example` in the backend directory to `.env`:
-```bash
-cp .env.example backend/.env
-```
-Ensure your `backend/.env` file contains your Google Gemini API key:
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-DATABASE_URL=postgresql+asyncpg://arogya:arogya_pass@localhost:5432/arogya_link
-CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175
-```
-
-### Step 3: Install Backend Dependencies
-```bash
-cd backend
-pip install -r requirements.txt
-cd ..
-```
-
-### Step 4: Install Frontend Dependencies
-Install dependencies for each frontend app:
-```bash
-# 1. Patient Kiosk
-cd apps/patient-kiosk
-npm install
-cd ../..
-
-# 2. Doctor Dashboard
-cd apps/doctor-dashboard
-npm install
-cd ../..
-
-# 3. Unified Portal
-cd apps/portal
-npm install
-cd ../..
-```
 
 ---
 
-## ⚡ One-Click Startup
+## ⚡ Quickstart & Docker Execution
 
-### Option A: Using Windows Batch Script (Recommended)
-Double-click `start_stack.bat` or run in terminal:
-```cmd
-start_stack.bat
-```
-
-### Option B: Running Individual Services Manually
-
-**Terminal 1 — Backend FastAPI:**
+### Start Entire System with Docker (Single Command)
 ```bash
-cd backend
-python -m uvicorn app.main:app --reload --port 8000
+docker compose up -d --build
 ```
 
-**Terminal 2 — Patient Kiosk:**
-```bash
-cd apps/patient-kiosk
-npm run dev
-```
-
-**Terminal 3 — Doctor Dashboard:**
-```bash
-cd apps/doctor-dashboard
-npm run dev
-```
-
-**Terminal 4 — Doctor-Patient Portal:**
-```bash
-cd apps/portal
-npm run dev
-```
+### Live Local Access URLs:
+* 🏥 **Main ArogyaLink Portal**: **[http://localhost/](http://localhost/)** *(Port 5175: `http://localhost:5175`)*
+* 👨‍⚕️ **Doctor OPD Dashboard**: **[http://localhost/doctor/](http://localhost/doctor/)** *(Port 5174: `http://localhost:5174`)*
+* 📱 **Patient Intake Kiosk**: **[http://localhost/kiosk/](http://localhost/kiosk/)** *(Port 5173: `http://localhost:5173`)*
+* ⚡ **FastAPI Interactive Docs**: **[http://localhost:8000/docs](http://localhost:8000/docs)**
 
 ---
 
-## 🌐 Localhost Port Mappings
+## ☁️ Cloud Deployment (Option B)
 
-| Service | Localhost URL | Description |
-| :--- | :--- | :--- |
-| **Backend API** | `http://localhost:8000` | FastAPI docs at `http://localhost:8000/docs` |
-| **Backend Health** | `http://localhost:8000/health` | Live database and service health check |
-| **Patient Kiosk** | `http://localhost:5173` | Touch & voice self-service intake kiosk in 7+ Indian languages |
-| **Doctor Dashboard** | `http://localhost:5174` | Doctor triage, clinical AI synthesis, and Rx OCR review |
-| **Unified Portal** | `http://localhost:5175` | Interactive doctor-patient showcase workspace |
+### Backend & Database on Render
+1. Connect repository `Shrinivas1908/ArogyaLink` to [Render](https://dashboard.render.com/).
+2. Select **"Blueprint"** — Render automatically uses [`render.yaml`](file:///c:/Users/HP/OneDrive/Desktop/ArogyaLink/render.yaml) to provision PostgreSQL + FastAPI Docker web service.
+
+### Frontends on Vercel
+Deploy the 3 frontend apps on [Vercel](https://vercel.com/) with configured `vercel.json` SPA rewrites:
+* **Portal**: Root directory `apps/portal`
+* **Doctor Dashboard**: Root directory `apps/doctor-dashboard`
+* **Patient Kiosk**: Root directory `apps/patient-kiosk`
 
 ---
 
@@ -305,49 +232,15 @@ npm run dev
 
 - `GET /health` — Check backend and database status.
 - `GET /queue/encounters/portal` — Retrieve active patient triage queue.
-- `GET /queue/encounter/{id}/portal` — Retrieve full clinical review bundle with AI summary and OCR data.
+- `DELETE /queue/encounters/{id}` — Delete / clear a specific patient encounter.
+- `DELETE /queue/encounters/clear-all` — Reset entire OPD queue.
+- `POST /intake/process-voice-narrative` — Parse 50+ word spoken narrative across 12 organ systems.
+- `POST /intake/submit-voice-followup` — Process AI follow-up response and merge newly reported symptoms.
 - `POST /ocr/process` — Upload prescription image or PDF for medical OCR and entity extraction.
-- `GET /ocr/encounter/{id}` — Retrieve cached OCR extraction results for encounter.
+- `GET /ocr/encounter/{id}` — Retrieve extracted OCR prescription data for an encounter.
 - `POST /summary/generate` — Generate Gemini 3.6/3.7 Flash structured clinical summary.
-- `POST /voice/transcribe` — Transcribe regional Indian language voice audio via Bhashini / local ASR engine.
-- `GET /voice/languages` — List supported Indian voice languages and metadata.
 - `GET /fhir/encounter/{id}` — Export encounter as HL7 FHIR R4 JSON document.
 - `POST /audit/approve-summary` — Doctor clinical signature and audit logging.
-
----
-
-## 📁 Project Directory Structure
-
-```
-ArogyaLink/
-├── apps/
-│   ├── doctor-dashboard/       # Doctor triage & review dashboard (React + Vite, Port 5174)
-│   │   ├── src/
-│   │   │   ├── components/     # EncounterDetail, PatientQueue, MetricStats, etc.
-│   │   │   └── pages/          # Dashboard.jsx
-│   │   └── package.json
-│   ├── patient-kiosk/          # Multilingual intake kiosk (React + Vite, Port 5173)
-│   │   ├── src/
-│   │   │   └── components/     # IntakeQuestionnaire, ConsentModal, etc.
-│   │   └── package.json
-│   └── portal/                 # Unified showcase portal (React + Vite, Port 5175)
-│       └── src/
-│           └── components/     # InteractiveDoctorWorkspace, RoleShowcase, etc.
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/             # FastAPI routers (queue, ocr, summary, triage, fhir, etc.)
-│   │   ├── core/               # Database connection, settings, auth dependencies
-│   │   ├── engines/            # Contradiction Engine, Question Engine, Triage Rules
-│   │   ├── integrations/       # GeminiClient (3.6/3.7 Flash), PaddleOCRClient (Vision + NER)
-│   │   ├── models/             # SQLAlchemy ORM models (Patient, Encounter, Consent, Answer)
-│   │   └── services/           # OCRService, LLMService
-│   ├── main.py                 # FastAPI application factory
-│   └── requirements.txt        # Python dependencies
-├── start_stack.bat             # One-click startup script for all services
-├── docker-compose.yml          # PostgreSQL & Redis container config
-├── .gitignore
-└── README.md
-```
 
 ---
 
