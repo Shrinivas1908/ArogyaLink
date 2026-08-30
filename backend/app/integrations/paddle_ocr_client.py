@@ -3,7 +3,7 @@ Arogya Link — integrations/paddle_ocr_client.py
 ================================================
 Phase 8 — Medical Document Intelligence & Real OCR Extraction Client.
 Extracts structured prescriptions, medications, dosages, frequencies, and lab report panels
-from real uploaded images and PDF documents using Multimodal Gemini Vision and BioClinical-NER.
+from real uploaded images and PDF documents using Multimodal Gemini Vision, Tesseract OCR, and BioClinical-NER.
 """
 
 from __future__ import annotations
@@ -17,6 +17,22 @@ import re
 from typing import Any
 
 import httpx
+
+import importlib
+
+# Dynamic module loaders for Docker-hosted vision packages (prevents Windows IDE import squigglies)
+def _load_optional_mod(mod_name: str) -> Any:
+    try:
+        return importlib.import_module(mod_name)
+    except Exception:
+        return None
+
+cv2 = _load_optional_mod("cv2")
+np = _load_optional_mod("numpy")
+pytesseract = _load_optional_mod("pytesseract")
+pymupdf = _load_optional_mod("pymupdf")
+_pil_mod = _load_optional_mod("PIL.Image")
+Image = getattr(_pil_mod, "Image", None) if _pil_mod else getattr(_load_optional_mod("PIL"), "Image", None)
 
 from app.core.config import settings
 
@@ -47,7 +63,7 @@ COMMON_DRUGS_DB: dict[str, dict[str, str]] = {
     "montelukast": {"name": "Tab. Montelukast + Levocetirizine", "type": "Anti-allergic / Bronchodilator", "default_dose": "10mg/5mg"},
     "omeprazole": {"name": "Cap. Omeprazole", "type": "Antacid / PPI", "default_dose": "20mg"},
     "amlodipine": {"name": "Tab. Amlodipine", "type": "Calcium Channel Blocker", "default_dose": "5mg"},
-    "ciprofloxacin": {"name": "Tab. Ciprofloxacin", "type": "Fluoroquinolone Antibiotic", "default_dose": "500mg"},
+    "ciprofloxacin": {"name": "Tab. Ciprofloxacin", "type": "Fluoroquinoline Antibiotic", "default_dose": "500mg"},
     "aspirin": {"name": "Tab. Aspirin (Ecosprin)", "type": "Antiplatelet / Cardioprotective", "default_dose": "75mg"},
     "ecosprin": {"name": "Tab. Ecosprin", "type": "Antiplatelet", "default_dose": "75mg"},
     "clopidogrel": {"name": "Tab. Clopidogrel", "type": "Antiplatelet", "default_dose": "75mg"},
@@ -84,14 +100,13 @@ class PaddleOCRClient:
 
     def _preprocess_image(self, image_bytes: bytes) -> bytes:
         """Enhance image using OpenCV CLAHE (Contrast Limited Adaptive Histogram Equalization)."""
+        if cv2 is None or np is None:
+            return image_bytes
         try:
-            import cv2
-            import numpy as np
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is None:
                 return image_bytes
-            # Convert to Grayscale & apply CLAHE for shadow/glare elimination
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
             enhanced = clahe.apply(gray)
@@ -121,24 +136,8 @@ class PaddleOCRClient:
         # Preprocess image with OpenCV (unless PDF)
         processed_bytes = image_bytes if is_pdf else self._preprocess_image(image_bytes)
 
-        # 1. Custom / External Cloud OCR REST API (if OCR_API_URL is configured)
-        if self.ocr_api_url and self.ocr_api_url.strip():
-            ext_result = self._extract_with_external_ocr_api(processed_bytes, filename=filename)
-            if ext_result and ext_result.get("status") == "success":
-                ext_result["document_id"] = doc_id
-                return ext_result
-
-        # 2. Gemini Multimodal Vision API (if valid Google AI Studio key is configured)
-        if self.gemini_api_key and self.gemini_api_key.strip().startswith("AIzaSy"):
-            ai_result = self._extract_with_gemini_vision(processed_bytes, is_pdf=is_pdf)
-            if ai_result and ai_result.get("status") == "success":
-                ai_result["document_id"] = doc_id
-                if not ai_result.get("document_type"):
-                    ai_result["document_type"] = "Medical Prescription & Investigation Record"
-                return ai_result
-
-        # 2. Secondary: PyMuPDF for PDF documents
-        if is_pdf:
+        # ── Pipeline Step 1: Digital PDF extraction (PyMuPDF) ──────────
+        if is_pdf and pymupdf is not None:
             extracted_text = self._extract_text_from_pdf(image_bytes)
             if extracted_text and len(extracted_text.strip()) > 15:
                 meds, labs = self._parse_medical_entities_from_text(extracted_text)
@@ -155,49 +154,56 @@ class PaddleOCRClient:
                     "engine": "PyMuPDF + BioClinical-NER",
                 }
 
-        # 3. Local Tesseract OCR Computer Vision Engine
-        try:
-            import pytesseract
-            from PIL import Image
-            import io
-            import cv2
-            import numpy as np
+        # ── Pipeline Step 2: External Cloud OCR REST API ───────────────
+        if self.ocr_api_url and self.ocr_api_url.strip():
+            ext_result = self._extract_with_external_ocr_api(processed_bytes, filename=filename)
+            if ext_result and ext_result.get("status") == "success":
+                ext_result["document_id"] = doc_id
+                return ext_result
 
-            # Image enhancement: grayscale, bilateral filter, Otsu adaptive threshold
-            nparr = np.frombuffer(processed_bytes, np.uint8)
-            cv_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if cv_img is not None:
-                gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-                # Denoise while preserving edges
-                denoised = cv2.bilateralFilter(gray, 9, 75, 75)
-                # Adaptive binarization for handwritten / printed text
-                thresh = cv2.adaptiveThreshold(denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-                
-                pil_img = Image.fromarray(thresh)
-                tess_text = pytesseract.image_to_string(pil_img, config="--oem 3 --psm 6")
-                
-                # Also try raw grayscale if threshold text was short
-                if len(tess_text.strip()) < 10:
-                    tess_text = pytesseract.image_to_string(Image.fromarray(gray), config="--oem 3 --psm 3")
+        # ── Pipeline Step 3: Google Gemini Multimodal Vision API ───────
+        if self.gemini_api_key and self.gemini_api_key.strip().startswith("AIzaSy"):
+            ai_result = self._extract_with_gemini_vision(processed_bytes, is_pdf=is_pdf)
+            if ai_result and ai_result.get("status") == "success":
+                ai_result["document_id"] = doc_id
+                if not ai_result.get("document_type"):
+                    ai_result["document_type"] = "Medical Prescription & Investigation Record"
+                return ai_result
 
-                extracted_text = tess_text.strip()
-                if extracted_text and len(extracted_text) > 8:
-                    meds, labs = self._parse_medical_entities_from_text(extracted_text)
-                    return {
-                        "status": "success",
-                        "document_id": doc_id,
-                        "document_type": "Medical Prescription & Investigation Record",
-                        "raw_text": extracted_text,
-                        "detected_medications": meds,
-                        "lab_results": labs,
-                        "confidence_score": 0.94,
-                        "language": self.lang,
-                        "engine": "Tesseract OCR Engine + BioClinical-NER",
-                    }
-        except Exception as tess_err:
-            logger.warning(f"Tesseract OCR local engine notice: {tess_err}")
+        # ── Pipeline Step 4: Local Tesseract OCR Engine (OpenCV) ───────
+        if pytesseract is not None and cv2 is not None and np is not None and Image is not None:
+            try:
+                nparr = np.frombuffer(processed_bytes, np.uint8)
+                cv_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if cv_img is not None:
+                    gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+                    denoised = cv2.bilateralFilter(gray, 9, 75, 75)
+                    thresh = cv2.adaptiveThreshold(denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                    
+                    pil_img = Image.fromarray(thresh)
+                    tess_text = pytesseract.image_to_string(pil_img, config="--oem 3 --psm 6")
+                    
+                    if len(tess_text.strip()) < 10:
+                        tess_text = pytesseract.image_to_string(Image.fromarray(gray), config="--oem 3 --psm 3")
 
-        # 4. Honest Failure State: No readable medical text detected
+                    extracted_text = tess_text.strip()
+                    if extracted_text and len(extracted_text) > 8:
+                        meds, labs = self._parse_medical_entities_from_text(extracted_text)
+                        return {
+                            "status": "success",
+                            "document_id": doc_id,
+                            "document_type": "Medical Prescription & Investigation Record",
+                            "raw_text": extracted_text,
+                            "detected_medications": meds,
+                            "lab_results": labs,
+                            "confidence_score": 0.94,
+                            "language": self.lang,
+                            "engine": "Tesseract OCR Engine + BioClinical-NER",
+                        }
+            except Exception as tess_err:
+                logger.warning(f"Tesseract OCR local engine notice: {tess_err}")
+
+        # ── Pipeline Step 5: Honest Failure (Zero Fake Data) ───────────
         return {
             "status": "failed",
             "error_code": "OCR_UNREADABLE_IMAGE",
