@@ -98,32 +98,43 @@ ArogyaLink implements a comprehensive clinical ontology engine (`clinical_intake
 
 ## 📄 Prescription & Document OCR Engine
 
-ArogyaLink incorporates an enterprise multi-tier clinical document processing pipeline engineered to ingest complex, noisy Indian prescriptions, camera snapshots, and digital diagnostic lab PDFs:
+ArogyaLink incorporates an enterprise multi-tier clinical document processing pipeline engineered to ingest complex, noisy Indian doctor handwriting, camera snapshots, shadow-distorted paper notes, and digital diagnostic lab PDFs:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                 Uploaded Rx Image or PDF                    │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            ▼                                     ▼
-   [Is PDF Document?]                    [Is Image File?]
-            │                                     │
-   ┌────────┴────────┐                   ┌────────┴────────┐
-   ▼                 ▼                   ▼                 ▼
-PyMuPDF        BioClinical-NER     Gemini 3.6-Flash    Tesseract OCR + OpenCV
-(Direct PDF)   (Entity Extractor)  (Multimodal AI)     (Adaptive CLAHE Binarization)
-            │                                     │
-            └──────────────────┬──────────────────┘
-                               ▼
-        ┌──────────────────────────────────────────────┐
-        │       100% Honest Clinical JSON Output       │
-        │ • Verbatim Raw Transcribed Text              │
-        │ • Detected Medications, Dosages & Timings    │
-        │ • Diagnostic Lab Investigations & Flags      │
-        │ • Auto-synced to Intake Answers (Zero Mock)  │
-        └──────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Uploaded Rx Image or PDF Document                    │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+               ┌─────────────────────┴─────────────────────┐
+               ▼                                           ▼
+      [Is PDF Document?]                          [Is Image File?]
+               │                                           │
+      ┌────────┴────────┐                         ┌────────┴────────┐
+      ▼                 ▼                         ▼                 ▼
+   PyMuPDF        BioClinical-NER        OpenCV Pre-Processing   Gemini 2.5/3.6 Flash
+   (Direct PDF)   (Entity Extractor)     • Morphological Shadow  (Multimodal Vision)
+                                           Division & Deskewing            │
+                                         • CLAHE Ink Contrast              ▼
+                                                    │           Fuzzy Entity Matching
+                                                    └──────────────► • CDSCO/RxNorm Formulary
+                                                                     • Lab Reference Range Flags
+                                                                     • Dosage & Frequency (1-0-1)
+                                                                           │
+                                                                           ▼
+                                                        ┌────────────────────────────────────┐
+                                                        │  100% Honest Clinical JSON Output  │
+                                                        │ • Verbatim Transcribed Text        │
+                                                        │ • Standardized Rx Drugs & Timings  │
+                                                        │ • Diagnostic Flags & Lab Panels    │
+                                                        │ • Auto-synced to Patient Intake    │
+                                                        └────────────────────────────────────┘
 ```
+
+### Key Technical Improvements
+1. **OpenCV Pre-Processing Pipeline**: Automatic contour-based deskewing and morphological background division (`255 - absdiff(gray, bg_blur)`) to flatten phone shadows and dim lighting before feeding images to vision models.
+2. **Gemini 2.5 / 3.6 Flash Multimodal Vision**: Vision LLM prompt with few-shot Indian prescription patterns (`1-0-1`, `OD`, `BD`, `TDS`, `HS`, `SOS`) and 25s client resilience timeouts.
+3. **Fuzzy Medical Entity Resolution**: Matches noisy OCR transcriptions (e.g. *"Paracetmol"*, *"Pan-D"*, *"Augmentn"*) against a clinical drug database (`COMMON_DRUGS_DB`) and lab panels (`COMMON_LABS_REF`) using similarity thresholds to ensure clean clinical names, dosages, and drug categories.
+4. **Chain-of-Thought (CoT) Grounded Summaries**: Summarizes clinical findings with zero hallucinations, linking intake answers directly with OCR active medications and red flags.
 
 ---
 
