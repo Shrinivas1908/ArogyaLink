@@ -1,13 +1,13 @@
 """
 Arogya Link — integrations/gemini_client.py
 ============================================
-Phase 10 — Gemini 3.6/3.7 Flash & Groq LLM Client with Structured JSON Schema Output.
+Phase 10 — Gemini Flash & Groq LLM Client with Structured Clinical JSON Schema Output.
 Features:
-- Gemini 3.6/3.7 Flash clinical synthesis with high precision
+- Gemini Flash clinical synthesis with high precision & Chain-of-Thought
 - Groq Llama-3.3-70b support
 - Deterministic Pydantic clinical safety baseline
-- Easy-to-understand Executive Summary & Patient-Friendly explanation
-- Full Multimodal OCR & Prescription linkage
+- Easy-to-understand Executive Summary & Patient-Friendly explanation in 7 Indian languages
+- Strict anti-hallucination factual grounding with OCR & Prescription linkage
 """
 
 from __future__ import annotations
@@ -23,8 +23,10 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 GEMINI_SUMMARY_MODELS = [
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
+    "gemini-2.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-flash-latest",
 ]
 
 
@@ -67,7 +69,7 @@ class GeminiClinicalSummarySchema(BaseModel):
 
 
 class GeminiClient:
-    """Interacts with Google Gemini & Groq LLM APIs for structured, easy-to-understand clinical summaries."""
+    """Interacts with Google Gemini & Groq LLM APIs for structured, grounded clinical summaries."""
 
     def __init__(self) -> None:
         self.gemini_api_key = settings.gemini_api_key
@@ -80,7 +82,7 @@ class GeminiClient:
         ocr_medications: list[dict[str, Any]] | None = None,
         language: str = "en",
     ) -> dict[str, Any]:
-        """Generate high-precision structured clinical summary optimized for easy human understanding."""
+        """Generate high-precision structured clinical summary optimized for clinical accuracy and patient understanding."""
         complaint = intake_answers.get("q_chief_complaint", None)
         complaint_candidates = []
         if isinstance(complaint, list):
@@ -111,7 +113,7 @@ class GeminiClient:
 
         ocr_context = ""
         if ocr_text:
-            ocr_context += f"\n- Uploaded Prescription / Lab Document Raw Text: {ocr_text[:600]}"
+            ocr_context += f"\n- Uploaded Prescription / Lab Document Raw Text: {ocr_text[:800]}"
         if ocr_medications:
             med_names = [f"{m.get('name')} {m.get('dosage', '')} ({m.get('frequency', '')})" for m in ocr_medications]
             ocr_context += f"\n- Extracted Active Medications from Rx: {', '.join(med_names)}"
@@ -129,46 +131,62 @@ class GeminiClient:
         lang_instruction = ""
         if language.lower() != "en":
             lang_instruction = (
-                f"\nIMPORTANT: The patient's chosen language is {lang_name}.\n"
-                f"Please write the 'patient_friendly_summary' in fluent, clear, and reassuring {lang_name}.\n"
-                f"For 'quick_summary', provide the concise English medical snapshot followed by a 1-sentence {lang_name} translation."
+                f"\nLANGUAGE REQUIREMENT:\n"
+                f"- The patient's requested language is {lang_name}.\n"
+                f"- Write 'patient_friendly_summary' in natural, compassionate, simple {lang_name} (avoiding complex English medical jargon).\n"
+                f"- For 'quick_summary', write the English clinical snapshot followed by a 1-sentence {lang_name} summary for the patient."
             )
 
-        # 1. Primary: Google Gemini Flash (3.6 / 3.7 / flash-latest)
+        # 1. Primary: Google Gemini Flash
         if self.gemini_api_key and self.gemini_api_key.strip():
-            prompt_text = (
-                f"You are an expert AI Clinical Decision-Support Specialist.\n"
-                f"Analyze the following patient intake and uploaded prescription data and produce a structured JSON summary:\n"
+            system_instruction = (
+                "You are an expert Chief Medical Officer & Clinical Triage Decision-Support AI.\n"
+                "Your objective is to generate an evidence-grounded, zero-hallucination clinical summary for a doctor in a Primary Health Centre (PHC).\n\n"
+                "CRITICAL REASONING RULES:\n"
+                "1. STRICT FACTUAL GROUNDING: Rely strictly on symptoms, duration, triage answers, and uploaded OCR prescription/lab text provided in the input. Never invent symptoms or medical history.\n"
+                "2. CONTRADICTION AWARENESS: If the patient answered 'no medications' but the uploaded OCR document shows active prescriptions, note this discrepancy in 'key_findings'.\n"
+                "3. RED FLAG TRIAGE: If cardiac, respiratory distress, or stroke symptoms are present, set severity to 'Critical' and prioritize emergency actions.\n"
+                "4. DIFFERENTIAL DIAGNOSES: Provide 2-3 most probable differentials with clear clinical rationales based on presentation.\n\n"
+                "OUTPUT FORMAT: Strictly valid JSON matching the following schema keys:\n"
+                "- quick_summary: 1-2 sentence high-yield executive summary for doctor.\n"
+                "- patient_friendly_summary: reassuring, simple 6th-grade language explanation for patient.\n"
+                "- chief_complaint: primary synthesized complaint.\n"
+                "- duration: symptom duration.\n"
+                "- severity: 'Critical', 'Urgent', or 'Routine'.\n"
+                "- history_of_present_illness: 2-sentence clinical HPI narrative.\n"
+                "- key_findings: array of bullet findings.\n"
+                "- active_medications_and_labs: array of medications and lab flags.\n"
+                "- potential_risk_factors: array of risk flags.\n"
+                "- differential_diagnoses: array of {condition, likelihood, rationale}.\n"
+                "- recommended_vitals_and_labs: array of immediate tests required.\n"
+                "- suggested_doctor_actions: array of actionable clinical steps."
+            )
+
+            user_prompt = (
+                f"Patient Intake Data:\n"
                 f"- Chief Complaint: {complaint_str}\n"
                 f"- Duration: {duration}\n"
                 f"- Severity: {severity}\n"
                 f"- Intake Answers: {json.dumps(intake_answers)}\n"
                 f"{ocr_context}\n"
-                f"{lang_instruction}\n\n"
-                f"Required JSON keys:\n"
-                f"- quick_summary (1-2 sentence high-yield snapshot for doctor at a glance)\n"
-                f"- patient_friendly_summary (simple, reassuring explanation in plain language for patient/family)\n"
-                f"- chief_complaint\n"
-                f"- duration\n"
-                f"- severity (Critical / Urgent / Routine)\n"
-                f"- history_of_present_illness (2-sentence clinical HPI narrative)\n"
-                f"- key_findings (array of concise findings)\n"
-                f"- active_medications_and_labs (array of detected Rx meds and lab results)\n"
-                f"- potential_risk_factors (array of safety alerts)\n"
-                f"- differential_diagnoses (array of objects: condition, likelihood [High/Moderate/Low], rationale)\n"
-                f"- recommended_vitals_and_labs (array of immediate investigations)\n"
-                f"- suggested_doctor_actions (array of step-by-step clinical actions)\n\n"
-                f"Return ONLY valid JSON."
+                f"{lang_instruction}"
             )
 
             for model_name in GEMINI_SUMMARY_MODELS:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key.strip()}"
                     payload = {
-                        "contents": [{"parts": [{"text": prompt_text}]}],
-                        "generationConfig": {"response_mime_type": "application/json", "temperature": 0.1},
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": system_instruction},
+                                    {"text": user_prompt},
+                                ]
+                            }
+                        ],
+                        "generationConfig": {"response_mime_type": "application/json", "temperature": 0.05},
                     }
-                    with httpx.Client(timeout=2.5) as client:
+                    with httpx.Client(timeout=4.0) as client:
                         resp = client.post(url, json=payload)
                         if resp.status_code == 200:
                             data = resp.json()
@@ -178,7 +196,7 @@ class GeminiClient:
                     logger.warning(f"Summary model {model_name} failed: {model_err}")
                     continue
 
-        # 2. Secondary: Groq Llama-3.3-70b (if key is configured and valid)
+        # 2. Secondary: Groq Llama-3.3-70b
         if self.groq_api_key and self.groq_api_key.strip():
             try:
                 system_prompt = (
@@ -194,9 +212,9 @@ class GeminiClient:
                     "model": "llama-3.3-70b-versatile",
                     "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
                     "response_format": {"type": "json_object"},
-                    "temperature": 0.1,
+                    "temperature": 0.05,
                 }
-                with httpx.Client(timeout=2.5) as client:
+                with httpx.Client(timeout=4.0) as client:
                     resp = client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
                     if resp.status_code == 200:
                         data = resp.json()
@@ -312,7 +330,7 @@ class GeminiClient:
         return summary_object.model_dump()
 
     def generate_conversational_reply(self, spoken_query: str, language: str = "en") -> dict[str, Any]:
-        """Generate real dynamic conversational triage guidance for patient voice input."""
+        """Generate dynamic conversational triage guidance for patient voice input."""
         q_lower = spoken_query.lower()
         
         # 1. Check for emergency red flags
@@ -349,7 +367,7 @@ class GeminiClient:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key.strip()}"
                     payload = {
                         "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 300},
+                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 300},
                     }
                     with httpx.Client(timeout=3.0) as client:
                         resp = client.post(url, json=payload)
@@ -374,7 +392,7 @@ class GeminiClient:
                         {"role": "system", "content": f"You are ArogyaMitra medical triage AI. Respond concisely in {lang_name}."},
                         {"role": "user", "content": prompt},
                     ],
-                    "temperature": 0.3,
+                    "temperature": 0.2,
                     "max_tokens": 300,
                 }
                 with httpx.Client(timeout=3.0) as client:
