@@ -41,7 +41,6 @@ services:
       - SUPABASE_JWT_AUD=${SUPABASE_JWT_AUD:-authenticated}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
-      - FAST2SMS_API_KEY=${FAST2SMS_API_KEY:-}
     env_file:
       - path: ./.env
         required: false

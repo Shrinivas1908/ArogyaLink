@@ -72,7 +72,6 @@ class Settings(BaseSettings):
     ocr_api_url: str = ""  # Cloud OCR API Endpoint (e.g. https://api.ocr.space/parse/image or custom endpoint)
     ocr_api_key: str = ""  # Cloud OCR API Key
     voice_timeout_secs: int = 10
-    fast2sms_api_key: str = ""
 
 
 # Single shared instance — import this everywhere
