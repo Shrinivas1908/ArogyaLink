@@ -47,7 +47,7 @@ export default function Login() {
             Doctor & Reviewer Portal
           </h1>
           <p className="text-[#7C6C62] text-xs font-semibold">
-            ArogyaLink · Clinical Decision Workspace
+            ArogyaSetu · Clinical Decision Workspace
           </p>
         </div>
 

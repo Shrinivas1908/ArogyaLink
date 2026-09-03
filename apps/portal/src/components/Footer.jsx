@@ -10,7 +10,7 @@ export default function Footer() {
             AL
           </div>
           <div>
-            <p className="font-bold text-[#12322B]">ArogyaLink Clinical Ecosystem</p>
+            <p className="font-bold text-[#12322B]">ArogyaSetu Clinical Ecosystem</p>
             <p className="text-[10px] text-[#5F7D74]">Intelligent Healthcare Triage & Review Platform</p>
           </div>
         </div>

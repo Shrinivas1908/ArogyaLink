@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
 
     app = FastAPI(
-        title="Arogya Link API",
+        title="ArogyaSetu API",
         version=settings.app_version,
         description="Patient kiosk and clinical review platform — SIH 2026",
         docs_url="/docs" if settings.app_env == "development" else None,

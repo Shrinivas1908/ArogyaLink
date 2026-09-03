@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://arogyalink-backend.onrender.com/:path*"
+      "destination": "https://arogyasetu-backend.onrender.com/:path*"
     },
     {
       "source": "/(.*)",

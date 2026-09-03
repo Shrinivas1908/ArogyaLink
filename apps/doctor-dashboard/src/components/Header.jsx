@@ -12,7 +12,7 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <img
             src="/logo.jpg"
-            alt="ArogyaLink Logo"
+            alt="ArogyaSetu Logo"
             className="h-12 w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform"
           />
           <div>

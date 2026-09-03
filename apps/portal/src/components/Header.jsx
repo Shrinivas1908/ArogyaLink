@@ -23,7 +23,7 @@ export default function Header() {
           </div>
           <div>
             <span className="text-xs font-extrabold tracking-widest text-[#12322B] uppercase">
-              AROGYA <span className="font-light text-[#5F7D74]">LINK</span>
+              AROGYA <span className="font-light text-[#5F7D74]">SETU</span>
             </span>
           </div>
         </div>
