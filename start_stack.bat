@@ -1,22 +1,22 @@
 @echo off
 echo ==========================================
-echo Arogya Link — Local Development Stack
+echo ArogyaSetu — Local Development Stack
 echo ==========================================
 
 :: 1. Start Backend FastAPI
-start "ArogyaLink - Backend" cmd /k "cd backend && uvicorn app.main:app --reload --port 8000"
+start "ArogyaSetu - Backend" cmd /k "cd backend && uvicorn app.main:app --reload --port 8000"
 echo [OK] Started Backend FastAPI on port 8000
 
 :: 2. Start Patient Kiosk React App
-start "ArogyaLink - Kiosk" cmd /k "cd apps/patient-kiosk && npm run dev"
+start "ArogyaSetu - Kiosk" cmd /k "cd apps/patient-kiosk && npm run dev"
 echo [OK] Started Patient Kiosk on port 5173
 
 :: 3. Start Doctor Dashboard React App
-start "ArogyaLink - Dashboard" cmd /k "cd apps/doctor-dashboard && npm run dev"
+start "ArogyaSetu - Dashboard" cmd /k "cd apps/doctor-dashboard && npm run dev"
 echo [OK] Started Doctor Dashboard on port 5174
 
 :: 4. Start Doctor-Patient Website Portal
-start "ArogyaLink - Main Portal" cmd /k "cd apps/portal && npm run dev"
+start "ArogyaSetu - Main Portal" cmd /k "cd apps/portal && npm run dev"
 echo [OK] Started Doctor-Patient Portal on port 5175
 
 echo ==========================================
