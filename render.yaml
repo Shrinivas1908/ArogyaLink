@@ -20,13 +20,13 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: "*"
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: FAST2SMS_API_KEY
-        value: IcrwZbl1TVA9npQie8sFqkaNEuR20gD43zyMoJYLjBtdG6xXSWPUxlR9Yzg7kO3K5wBHQIqMLueFD8sJ
+        sync: false
 
 databases:
   # ── 2. Managed PostgreSQL Database ────────────────────────────────────

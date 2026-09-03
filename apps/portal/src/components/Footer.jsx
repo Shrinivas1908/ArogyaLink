@@ -16,9 +16,9 @@ export default function Footer() {
         </div>
 
         <div className="flex items-center gap-6 font-semibold">
-          <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">API Documentation</a>
-          <a href="http://localhost:5173" target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Patient Kiosk (5173)</a>
-          <a href="http://localhost:5174" target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Doctor Workspace (5174)</a>
+          <a href={import.meta.env.VITE_DOCS_URL || "/api/docs"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">API Documentation</a>
+          <a href={import.meta.env.VITE_KIOSK_URL || "http://localhost:5173"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Patient Kiosk</a>
+          <a href={import.meta.env.VITE_DOCTOR_URL || "http://localhost:5174"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Doctor Workspace</a>
         </div>
 
         <div className="text-[11px] text-[#5F7D74] font-medium">

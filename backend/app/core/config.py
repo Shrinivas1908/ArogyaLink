@@ -11,6 +11,7 @@ Per Phase 0 plan:
 
 from __future__ import annotations
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,8 +27,23 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_version: str = "0.1.0"
 
-    # ── Database (PostgreSQL) ─────────────────────────────────────────
+    # ── Database (PostgreSQL / SQLite) ────────────────────────────────
     database_url: str = "postgresql+asyncpg://arogya:arogya_pass@localhost:5432/arogya_link"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """Ensure standard Postgres and SQLite URLs map to async SQLAlchemy drivers."""
+        if not v:
+            return v
+        url = v.strip()
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql://") and not url.startswith("postgresql+"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("sqlite://") and not url.startswith("sqlite+"):
+            return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+        return url
 
     # ── CORS ─────────────────────────────────────────────────────────
     cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:5175"
