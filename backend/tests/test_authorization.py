@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — tests/test_authorization.py
 ============================================
 Authorization & Role-Based Access Control (RBAC) integration tests.
@@ -51,7 +51,7 @@ def test_staff_me_authenticated(mock_from_jwk, mock_get_header, mock_decode, moc
     mock_from_jwk.return_value = "dummy-public-key"
     mock_decode.return_value = {
         "sub": "00000000-0000-0000-0000-000000000001",
-        "email": "doctor@arogyalink.in",
+        "email": "doctor@arogyasetu.in",
         "aud": "authenticated",
     }
 
@@ -60,7 +60,7 @@ def test_staff_me_authenticated(mock_from_jwk, mock_get_header, mock_decode, moc
     assert r.status_code == 200
     data = r.json()
     assert data["id"] == "00000000-0000-0000-0000-000000000001"
-    assert data["email"] == "doctor@arogyalink.in"
+    assert data["email"] == "doctor@arogyasetu.in"
 
 
 def test_list_staff_as_doctor_returns_403():
@@ -68,7 +68,7 @@ def test_list_staff_as_doctor_returns_403():
     async def override_get_current_user():
         return AuthUser(
             id="00000000-0000-0000-0000-000000000001",
-            email="doctor@arogyalink.in",
+            email="doctor@arogyasetu.in",
             role="doctor",
             active=True,
         )
@@ -88,7 +88,7 @@ def test_deactivate_staff_as_doctor_returns_403():
     async def override_get_current_user():
         return AuthUser(
             id="00000000-0000-0000-0000-000000000001",
-            email="doctor@arogyalink.in",
+            email="doctor@arogyasetu.in",
             role="doctor",
             active=True,
         )
@@ -108,7 +108,7 @@ def test_deactivate_staff_invalid_uuid_as_admin():
     async def override_get_current_user():
         return AuthUser(
             id="00000000-0000-0000-0000-000000000099",
-            email="admin@arogyalink.in",
+            email="admin@arogyasetu.in",
             role="admin",
             active=True,
         )

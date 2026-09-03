@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { session, signInWithCredentials } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('doctor@arogyalink.in')
+  const [email, setEmail] = useState('doctor@arogyasetu.in')
   const [password, setPassword] = useState('Doctor@2026')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
@@ -69,7 +69,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="doctor@arogyalink.in"
+                placeholder="doctor@arogyasetu.in"
                 className="w-full px-4 py-3 border border-[#EFE8DE] rounded-xl text-xs font-bold text-[#2E1B15] bg-[#FAF7F2] outline-none focus:border-[#6E3E30] focus:bg-white shadow-sm"
               />
             </div>

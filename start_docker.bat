@@ -1,6 +1,6 @@
-@echo off
+﻿@echo off
 echo ========================================================
-echo   ArogyaLink — Production Docker Stack Launch
+echo   ArogyaSetu — Production Docker Stack Launch
 echo ========================================================
 echo.
 echo 1. Checking Docker engine status...
@@ -18,7 +18,7 @@ docker compose up --build -d
 
 echo.
 echo ========================================================
-echo  All ArogyaLink services are starting up!
+echo  All ArogyaSetu services are starting up!
 echo ========================================================
 echo  - PostgreSQL Database:  localhost:5432
 echo  - FastAPI Backend:       http://localhost:8000

@@ -1,5 +1,5 @@
-/**
- * ArogyaLink — utils/offlineSync.js
+﻿/**
+ * ArogyaSetu — utils/offlineSync.js
  * ===================================
  * Client-side IndexedDB queue for offline-first patient check-in at rural kiosks.
  * Automatically buffers answers & sessions and flushes to the backend when online.

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — app/main.py
 ===========================
 FastAPI application factory.
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     except Exception as e:
-        print(f"[ArogyaLink] Database initialization notice: {e}")
+        print(f"[ArogyaSetu] Database initialization notice: {e}")
     yield
 
 

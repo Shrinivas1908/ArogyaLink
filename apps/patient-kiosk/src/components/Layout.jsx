@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+﻿import { Outlet } from 'react-router-dom'
 
 /**
  * Patient Kiosk — Shared Layout
@@ -11,7 +11,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-sky-200/60 bg-white/80 backdrop-blur-md py-4 text-center text-xs text-slate-500 font-medium">
-        ArogyaLink Patient Kiosk · SIH 2026 Innovation
+        ArogyaSetu Patient Kiosk · SIH 2026 Innovation
       </footer>
     </div>
   )

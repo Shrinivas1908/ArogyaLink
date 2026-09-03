@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — tests/test_auth_boundary.py
 ===========================================
 Authentication boundary integration tests.
@@ -101,7 +101,7 @@ def test_protected_route_valid_token(mock_from_jwk, mock_get_header, mock_decode
     # Mock decoded claims payload
     mock_decode.return_value = {
         "sub": "user-uuid-1234",
-        "email": "doctor@arogyalink.in",
+        "email": "doctor@arogyasetu.in",
         "aud": "authenticated"
     }
 
@@ -112,4 +112,4 @@ def test_protected_route_valid_token(mock_from_jwk, mock_get_header, mock_decode
     data = r.json()
     assert data["authenticated"] is True
     assert data["user_id"] == "user-uuid-1234"
-    assert data["user_email"] == "doctor@arogyalink.in"
+    assert data["user_email"] == "doctor@arogyasetu.in"

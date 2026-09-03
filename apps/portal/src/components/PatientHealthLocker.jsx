@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 
 export default function PatientHealthLocker() {
   // Authentication State
@@ -73,7 +73,7 @@ export default function PatientHealthLocker() {
         phone: phoneOrAbha,
         abha_number: authMethod === 'abha' ? phoneOrAbha : 'Not linked',
         abha_address: 'Not registered',
-        linked_facility: 'ArogyaLink Network PHC',
+        linked_facility: 'ArogyaSetu Network PHC',
         documents: [],
         encounters: [],
       })
@@ -84,7 +84,7 @@ export default function PatientHealthLocker() {
         phone: phoneOrAbha,
         abha_number: 'Not linked',
         abha_address: 'Not registered',
-        linked_facility: 'ArogyaLink Network PHC',
+        linked_facility: 'ArogyaSetu Network PHC',
         documents: [],
         encounters: [],
       })

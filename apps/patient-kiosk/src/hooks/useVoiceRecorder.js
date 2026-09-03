@@ -1,5 +1,5 @@
-/**
- * ArogyaLink — hooks/useVoiceRecorder.js
+﻿/**
+ * ArogyaSetu — hooks/useVoiceRecorder.js
  * ========================================
  * Real browser voice recording using the Web Speech API (SpeechRecognition).
  * Supports 7 Indian languages with continuous audio streaming, live transcript,

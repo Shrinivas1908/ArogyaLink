@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — api/v1/ws.py
 ==========================
 WebSocket Connection Manager for Real-Time Doctor Queue and Triage Notifications.
@@ -58,7 +58,7 @@ async def websocket_queue_endpoint(websocket: WebSocket) -> None:
         # Send initial confirmation handshake
         await websocket.send_text(json.dumps({
             "event": "CONNECTED",
-            "message": "ArogyaLink Real-time Queue Stream Active"
+            "message": "ArogyaSetu Real-time Queue Stream Active"
         }))
         while True:
             # Keep connection alive and listen for client heartbeats or ping

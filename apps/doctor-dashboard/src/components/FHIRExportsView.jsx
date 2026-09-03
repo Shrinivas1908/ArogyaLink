@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 
 export default function FHIRExportsView({
   encounters,
@@ -28,7 +28,7 @@ export default function FHIRExportsView({
           profile: ['https://nrces.in/ndhm/fhir/r4/StructureDefinition/DocumentBundle'],
         },
         identifier: {
-          system: 'https://arogyalink.in/fhir/bundles',
+          system: 'https://arogyasetu.in/fhir/bundles',
           value: `BUNDLE-${(activeEnc.encounter_id || activeEnc.id || '2048').slice(0, 8)}`,
         },
         timestamp: new Date().toISOString(),
@@ -102,7 +102,7 @@ export default function FHIRExportsView({
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(bundleToDownload, null, 2))
     const downloadAnchor = document.createElement('a')
     downloadAnchor.setAttribute('href', dataStr)
-    downloadAnchor.setAttribute('download', `arogyalink-fhir-${encId.slice(0, 8)}.json`)
+    downloadAnchor.setAttribute('download', `arogyasetu-fhir-${encId.slice(0, 8)}.json`)
     document.body.appendChild(downloadAnchor)
     downloadAnchor.click()
     downloadAnchor.remove()
@@ -113,7 +113,7 @@ export default function FHIRExportsView({
     const masterBundle = {
       resourceType: 'Bundle',
       type: 'batch',
-      id: `arogyalink-abdm-export-${new Date().toISOString().slice(0, 10)}`,
+      id: `arogyasetu-abdm-export-${new Date().toISOString().slice(0, 10)}`,
       total: encounters.length,
       timestamp: new Date().toISOString(),
       bundles: encounters.map((e) => ({
@@ -127,7 +127,7 @@ export default function FHIRExportsView({
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(masterBundle, null, 2))
     const downloadAnchor = document.createElement('a')
     downloadAnchor.setAttribute('href', dataStr)
-    downloadAnchor.setAttribute('download', `arogyalink-abdm-master-export.json`)
+    downloadAnchor.setAttribute('download', `arogyasetu-abdm-master-export.json`)
     document.body.appendChild(downloadAnchor)
     downloadAnchor.click()
     downloadAnchor.remove()

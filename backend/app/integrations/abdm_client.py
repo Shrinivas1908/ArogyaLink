@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — integrations/abdm_client.py
 ==========================================
 Phase 12 — Ayushman Bharat Digital Mission (ABDM) M1, M2 & M3 Integration Client.
@@ -89,7 +89,7 @@ class ABDMClient:
             "records_linked": len(fhir_bundle.get("entry", [])),
             "gateway_url": self.base_url,
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "hip_id": "AROGYALINK_CLINIC_01",
+            "hip_id": "AROGYASETU_CLINIC_01",
             "consent_artefact": {
                 "id": f"CONSENT-{uuid.uuid4().hex[:6].upper()}",
                 "status": "GRANTED",

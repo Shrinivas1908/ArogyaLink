@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — tests/test_doctor_queue.py
 ===========================================
 Phase 6 — Doctor Queue Integration Tests.
@@ -19,7 +19,7 @@ mock_doctor_user = AuthUser(
     id="doc-123",
     sub="user_doc_123",
     role="doctor",
-    email="doctor@arogyalink.in",
+    email="doctor@arogyasetu.in",
     full_name="Dr. Ananya Roy",
 )
 

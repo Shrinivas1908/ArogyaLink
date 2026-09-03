@@ -78,7 +78,7 @@ export default function Sidebar({ activeNav, setActiveNav, onSignOut }) {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold tracking-wider text-sm text-[#FAF6F0]">AROGYA</span>
-              <span className="text-[9px] uppercase tracking-widest text-[#B39B8E] font-medium">LINK • CLINICAL</span>
+              <span className="text-[9px] uppercase tracking-widest text-[#B39B8E] font-medium">SETU • CLINICAL</span>
             </div>
           </div>
         </div>

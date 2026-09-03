@@ -1,4 +1,4 @@
-"""
+﻿"""
 Arogya Link — tests/test_audit_approval.py
 ============================================
 Phase 11 — Doctor Approval & Audit Trail Integration Tests.
@@ -21,7 +21,7 @@ mock_doctor = AuthUser(
     id="doc-audit-1",
     sub="sub-doc-audit",
     role="doctor",
-    email="doctor_audit@arogyalink.in",
+    email="doctor_audit@arogyasetu.in",
     full_name="Dr. Audit Reviewer",
 )
 

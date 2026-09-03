@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 
 export default function InteractiveDoctorWorkspace() {
   const [encounters, setEncounters] = useState([])
@@ -169,7 +169,7 @@ export default function InteractiveDoctorWorkspace() {
         const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(bundle, null, 2))
         const downloadAnchor = document.createElement('a')
         downloadAnchor.setAttribute('href', dataStr)
-        downloadAnchor.setAttribute('download', `arogyalink-fhir-${selectedEncounter.encounter_id.slice(0, 8)}.json`)
+        downloadAnchor.setAttribute('download', `arogyasetu-fhir-${selectedEncounter.encounter_id.slice(0, 8)}.json`)
         document.body.appendChild(downloadAnchor)
         downloadAnchor.click()
         downloadAnchor.remove()
