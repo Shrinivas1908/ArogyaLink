@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ArogyaSetu — hooks/useVoiceRecorder.js
  * ========================================
  * Real browser voice recording using the Web Speech API (SpeechRecognition).

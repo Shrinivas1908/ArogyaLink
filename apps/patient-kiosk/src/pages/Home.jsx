@@ -53,8 +53,8 @@ export default function Home() {
     }
   }
 
-  const handleCreateSession = async (e) => {
-    e.preventDefault()
+  const handleCreateSession = async (e, otpCode) => {
+    if (e) e.preventDefault()
     const name = formData.fullName.trim()
     if (!name) {
       setError('Patient Full Name is required to start registration (मरीज़ का नाम अनिवार्य है).')
@@ -63,6 +63,15 @@ export default function Home() {
     const parsedAge = parseInt(formData.age, 10)
     if (!formData.age || isNaN(parsedAge) || parsedAge <= 0 || parsedAge > 125) {
       setError('Please enter a valid patient age between 1 and 125.')
+      return
+    }
+    const cleanPhone = formData.phone ? formData.phone.replace(/\D/g, '') : ''
+    if (cleanPhone.length < 10) {
+      setError('Please provide a valid 10-digit mobile phone number.')
+      return
+    }
+    if (!otpCode || otpCode.trim().length < 4) {
+      setError('Please enter the 6-digit OTP code sent via n8n to your phone.')
       return
     }
 
@@ -76,7 +85,8 @@ export default function Home() {
           full_name: name,
           age: parsedAge,
           gender: formData.gender || 'Male',
-          phone: formData.phone.trim() || null,
+          phone: cleanPhone,
+          otp: otpCode.trim(),
           kiosk_id: 'kiosk-01',
         }),
       })

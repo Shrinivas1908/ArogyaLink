@@ -27,12 +27,13 @@ client = TestClient(app)
 
 
 def test_create_session_success():
-    """POST /session creates a patient and an active encounter."""
+    """POST /session creates a patient and an active encounter when OTP is verified."""
     payload = {
         "full_name": "Radha Devi",
         "age": 42,
         "gender": "Female",
         "phone": "+919876543210",
+        "otp": "123456",
         "kiosk_id": "kiosk-north",
     }
     r = client.post("/session", json=payload)
@@ -47,10 +48,50 @@ def test_create_session_success():
     uuid.UUID(data["patient_id"])
 
 
+def test_direct_registration_without_otp_rejected():
+    """POST /session without OTP must be rejected with 400."""
+    payload = {
+        "full_name": "Unverified User",
+        "age": 30,
+        "phone": "+919876543210",
+    }
+    r = client.post("/session", json=payload)
+    assert r.status_code == 400
+    assert "OTP verification code is required" in str(r.json())
+
+
+def test_direct_registration_without_phone_rejected():
+    """POST /session without phone must be rejected with 400."""
+    payload = {
+        "full_name": "No Phone User",
+        "age": 30,
+        "otp": "123456",
+    }
+    r = client.post("/session", json=payload)
+    assert r.status_code == 400
+    assert "Mobile phone number is mandatory" in str(r.json())
+
+
+def test_direct_registration_with_invalid_otp_rejected():
+    """POST /session with invalid OTP must be rejected with 401."""
+    payload = {
+        "full_name": "Wrong OTP User",
+        "age": 30,
+        "phone": "+919876543210",
+        "otp": "000000",
+    }
+    r = client.post("/session", json=payload)
+    assert r.status_code == 401
+    assert "OTP" in str(r.json())
+
+
 def test_record_consent_success():
     """POST /consent records patient consent for an encounter."""
-    # 1. Start session
-    r1 = client.post("/session", json={"full_name": "Suresh Patel", "age": 55})
+    # 1. Start session with OTP
+    r1 = client.post(
+        "/session",
+        json={"full_name": "Suresh Patel", "age": 55, "phone": "9876543210", "otp": "123456"},
+    )
     assert r1.status_code == 201
     enc_id = r1.json()["encounter_id"]
 
@@ -77,7 +118,10 @@ def test_record_consent_success():
 
 def test_record_consent_declined():
     """POST /consent with consented=False cancels the encounter."""
-    r1 = client.post("/session", json={"full_name": "Declined User"})
+    r1 = client.post(
+        "/session",
+        json={"full_name": "Declined User", "age": 40, "phone": "9876543210", "otp": "123456"},
+    )
     enc_id = r1.json()["encounter_id"]
 
     c_payload = {

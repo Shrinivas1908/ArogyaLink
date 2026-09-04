@@ -239,8 +239,50 @@ Deploy the 3 frontend apps on [Vercel](https://vercel.com/) with configured `ver
 
 ---
 
+## 🤖 n8n Cloud Automation & Real-Time Alerting
+
+ArogyaLink features native, bidirectional integration with **n8n Cloud Automation Workflows**:
+- **Outbound Webhook Dispatch**: Automatically triggers the configured n8n webhook (`N8N_WEBHOOK_URL`) upon critical clinical and operational events:
+  - `EMERGENCY_ESCALATION`: Real-time alerts when red flags or `CRITICAL` triage levels are detected.
+  - `PATIENT_CHECKIN`: Notifies external systems when a patient arrives at the kiosk or logs in with ABHA.
+  - `PATIENT_LOGIN_OTP`: Dispatches patient verification codes via n8n for SMS / WhatsApp delivery.
+  - `MEDICATION_REMINDER`: Pushes scheduled prescription reminders to external communication workflows.
+  - `TEST_PING`: Diagnostic health check from the Doctor Review Workspace.
+- **Inbound Audit Post-Responses**: Supports incoming HTTP POST execution responses from n8n (`POST /notifications/n8n/audit` or `POST /audit/logs`).
+- **Live WebSocket Broadcast**: Ingested n8n audit responses automatically broadcast over `/ws/notifications`, immediately triggering live alert banners and patient queue updates on both the Doctor Review Workspace and Doctor Dashboard.
+
+---
+
+## 🔒 Mandatory Mobile OTP Patient Authentication
+
+Direct patient check-in without verification is strictly prevented:
+1. **Mandatory 10-Digit Mobile Number**: The `(Optional)` tag has been removed; every registration requires a valid mobile number.
+2. **Automated n8n Dispatch**: Clicking **Send OTP** fires the `PATIENT_LOGIN_OTP` event to n8n to send the 6-digit code.
+3. **Interactive Verification Card**: A dedicated 6-digit OTP entry card with active 45-second countdown timer and resend controls gates access.
+4. **Strict Backend Gate**: `POST /session` rejects any unverified request with `HTTP 400` / `401`. Access to Step 3 (Consent) and Step 4 (Clinical Intake) is unlocked only upon genuine OTP verification.
+
+---
+
 ## 🔌 API Endpoints
 
+### Patient Session & OTP Authentication
+- `POST /auth/otp/send` — Generate and dispatch 6-digit OTP via n8n automation.
+- `POST /auth/otp/verify` — Verify submitted OTP code against active token.
+- `POST /session` — Start patient check-in session (**mandatory mobile OTP verification**).
+- `POST /session/abha` — Start session via 14-digit ABHA ID & PIN.
+- `POST /consent` — Record versioned patient consent (DPDP Act 2023 conformant).
+- `GET  /session/{id}` — Retrieve session state and consent status.
+
+### n8n Automation & Webhooks
+- `POST /notifications/n8n/test` — Trigger a diagnostic test ping to n8n webhook.
+- `POST /notifications/n8n/dispatch` — Dispatch custom notification payloads to n8n.
+- `POST /notifications/n8n/escalate` — Manual emergency escalation trigger to n8n.
+- `GET  /notifications/n8n/status` — Inspect n8n webhook status and recent delivery logs.
+- `GET  /notifications/n8n/audit` — Retrieve complete n8n webhook delivery audit trail.
+- `POST /notifications/n8n/audit` — Inbound endpoint for n8n workflow execution post-responses.
+- `POST /audit/logs` — Inbound alias for external audit logs and n8n responses.
+
+### Clinical Triage, Intake & AI
 - `GET /health` — Check backend and database status.
 - `GET /queue/encounters/portal` — Retrieve active patient triage queue.
 - `DELETE /queue/encounters/{id}` — Delete / clear a specific patient encounter.
@@ -252,6 +294,88 @@ Deploy the 3 frontend apps on [Vercel](https://vercel.com/) with configured `ver
 - `POST /summary/generate` — Generate Gemini 3.6/3.7 Flash structured clinical summary.
 - `GET /fhir/encounter/{id}` — Export encounter as HL7 FHIR R4 JSON document.
 - `POST /audit/approve-summary` — Doctor clinical signature and audit logging.
+- `POST /audit/override-summary` — Doctor override with rationale and audit record.
+
+---
+
+## 🚀 Production Deployment Guide
+
+Follow this guide to deploy ArogyaLink to production environments (e.g. AWS, Render, Railway, Vercel, Supabase, Docker):
+
+### 1. Environment Configuration Checklist
+Copy `.env.example` to `.env` on your production host and configure:
+```bash
+# Database
+DATABASE_URL=postgresql+asyncpg://<db_user>:<db_password>@<db_host>:5432/<db_name>?ssl=require
+
+# Supabase Auth
+SUPABASE_URL=https://<your-project-id>.supabase.co
+SUPABASE_JWT_AUD=authenticated
+SUPABASE_ANON_KEY=<production-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<production-service-role-key>
+
+# Environment & CORS (Include your live frontend domains)
+APP_ENV=production
+APP_VERSION=1.0.0
+CORS_ORIGINS=https://kiosk.yourdomain.com,https://doctor.yourdomain.com,https://portal.yourdomain.com
+
+# AI & Government APIs
+GEMINI_API_KEY=<your-production-gemini-key>
+BHASHINI_API_KEY=<bhashini-api-key>
+BHASHINI_USER_ID=<bhashini-user-id>
+ABDM_BASE_URL=https://sandbox.abdm.gov.in # Or production ABDM gateway
+ABDM_CLIENT_ID=<abdm-client-id>
+ABDM_CLIENT_SECRET=<abdm-client-secret>
+
+# n8n Cloud Automation
+N8N_WEBHOOK_URL=https://<your-n8n-instance>.app.n8n.cloud/webhook/arogyasetu-notifications
+N8N_ENABLED=true
+```
+
+> [!CAUTION]
+> Never commit `.env` or production credentials to source control. ArogyaLink's `.gitignore` enforces strict exclusion of all `.env*` files.
+
+### 2. Database Migration & Provisioning
+Run database migrations using Alembic on your production PostgreSQL instance:
+```bash
+cd backend
+alembic upgrade head
+```
+
+### 3. Backend Deployment (Docker / Container Services)
+The backend can be containerized or run with production ASGI workers:
+```bash
+# Production execution with multiple Uvicorn workers behind a reverse proxy (Nginx / Caddy / Cloudflare)
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --proxy-headers --forwarded-allow-ips="*"
+```
+Ensure WebSocket support is enabled on your reverse proxy for `/ws/notifications`.
+
+### 4. Frontend Build & Static Hosting
+Build production bundles for the three client applications:
+```bash
+# Patient Kiosk (Vercel / Netlify / S3 + CloudFront)
+cd apps/patient-kiosk
+npm run build # Outputs to dist/
+
+# Doctor Dashboard
+cd ../doctor-dashboard
+npm run build # Outputs to dist/
+
+# Central Portal
+cd ../portal
+npm run build # Outputs to dist/
+```
+In your production hosting dashboard, set the following environment variables:
+- `VITE_API_URL=https://api.yourdomain.com`
+- `VITE_WS_URL=wss://api.yourdomain.com/ws/notifications`
+
+### 5. n8n Cloud Webhook Workflow Setup
+1. Create a Webhook trigger node in n8n listening for `POST` requests.
+2. Route events by `event_type`:
+   - `PATIENT_LOGIN_OTP`: Route to SMS gateway (Twilio, Gupshup, or MSG91) or WhatsApp Business API.
+   - `EMERGENCY_ESCALATION`: Send high-priority Slack/PagerDuty/Email alerts to senior doctors.
+   - `MEDICATION_REMINDER`: Dispatch scheduled reminder messages to patients.
+3. Configure the n8n execution response node to send a `POST` callback to `https://api.yourdomain.com/notifications/n8n/audit` or `https://api.yourdomain.com/audit/logs` to log completion in ArogyaLink's live audit dashboard.
 
 ---
 

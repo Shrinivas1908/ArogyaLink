@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — tests/test_authorization.py
 ============================================
 Authorization & Role-Based Access Control (RBAC) integration tests.

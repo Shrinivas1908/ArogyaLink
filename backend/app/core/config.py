@@ -73,6 +73,17 @@ class Settings(BaseSettings):
     ocr_api_key: str = ""  # Cloud OCR API Key
     voice_timeout_secs: int = 10
 
+    # ── WhatsApp / SMS Gateway (Phase 14+) ───────────────────────────
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_whatsapp_number: str = "+14155238886"  # Twilio Sandbox or approved sender
+    whatsapp_cloud_api_token: str = ""
+    whatsapp_phone_number_id: str = ""
+
+    # ── n8n Cloud Automation Webhook ─────────────────────────────────
+    n8n_webhook_url: str = "https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications"
+    n8n_enabled: bool = True
+
 
 # Single shared instance — import this everywhere
 settings = Settings()

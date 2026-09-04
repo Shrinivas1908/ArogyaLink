@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/Sidebar'
 import MetricStats from '../components/MetricStats'
@@ -90,6 +90,10 @@ export default function Dashboard() {
                 symptoms: msg.data?.symptoms || 'Severe discomfort + breathing difficulty + radiating pain.',
               })
               setShowToast(true)
+            }
+            if (msg.event === 'N8N_AUDIT_LOG') {
+              setActionMessage(`⚡ n8n Notification Audit: ${msg.data?.message || 'Workflow response processed'}`)
+              setTimeout(() => setActionMessage(null), 5000)
             }
           } catch {}
         }

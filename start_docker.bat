@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 echo ========================================================
 echo   ArogyaSetu — Production Docker Stack Launch
 echo ========================================================

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 
 export default function InteractiveDoctorWorkspace() {
   const [encounters, setEncounters] = useState([])
@@ -60,6 +60,10 @@ export default function InteractiveDoctorWorkspace() {
           fetchQueue()
           if (msg.event === 'CRITICAL_ESCALATION') {
             setEscalationAlert(msg.data)
+          }
+          if (msg.event === 'N8N_AUDIT_LOG') {
+            setActionMessage(`⚡ n8n Notification Audit: ${msg.data?.message || 'Cloud response processed'}`)
+            setTimeout(() => setActionMessage(null), 5000)
           }
         } catch (err) {
           console.warn('WS parse notice:', err)
@@ -181,6 +185,35 @@ export default function InteractiveDoctorWorkspace() {
     }
   }
 
+  // 8. Test live n8n webhook notification
+  const [n8nTesting, setN8nTesting] = useState(false)
+  const handleTestN8n = async () => {
+    setN8nTesting(true)
+    try {
+      const res = await fetch('/api/notifications/n8n/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          triggered_by: 'Doctor Portal Workspace',
+          note: 'Live diagnostic trigger from Doctor Review Workspace',
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.status === 'success') {
+        setActionMessage('⚡ n8n Webhook Triggered Successfully! Workflow started on cloud.')
+      } else {
+        setActionMessage('⚡ n8n Webhook Dispatched (Response received from cloud).')
+      }
+      setTimeout(() => setActionMessage(null), 5000)
+    } catch (err) {
+      console.error('n8n trigger test failed:', err)
+      setActionMessage('❌ Could not dispatch to n8n webhook endpoint.')
+      setTimeout(() => setActionMessage(null), 4000)
+    } finally {
+      setN8nTesting(false)
+    }
+  }
+
   const filteredEncounters = encounters.filter((e) => {
     if (filterSeverity === 'ALL') return true
     return (e.triage_level || 'ROUTINE').toUpperCase() === filterSeverity
@@ -231,21 +264,43 @@ export default function InteractiveDoctorWorkspace() {
           </p>
         </div>
 
-        {/* Severity Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-sky-100/60 rounded-2xl border border-sky-200 text-xs font-bold">
-          {['ALL', 'CRITICAL', 'URGENT', 'ROUTINE'].map((sev) => (
-            <button
-              key={sev}
-              onClick={() => setFilterSeverity(sev)}
-              className={`px-3 py-1.5 rounded-xl transition ${
-                filterSeverity === sev
-                  ? 'bg-white text-sky-900 shadow-sm font-extrabold border border-sky-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+        {/* Header Controls: Filters & n8n Automation */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* n8n Webhook Cloud Automation Chip & Button */}
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200 text-xs font-semibold"
+              title="Connected: https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications"
             >
-              {sev}
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="hidden sm:inline">n8n Connected</span>
+            </span>
+            <button
+              onClick={handleTestN8n}
+              disabled={n8nTesting}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 disabled:opacity-50 text-white rounded-2xl text-xs font-bold shadow-sm transition"
+              title="Trigger real-time test event to n8n webhook"
+            >
+              <span>{n8nTesting ? 'Triggering…' : '⚡ Test n8n Alert'}</span>
             </button>
-          ))}
+          </div>
+
+          {/* Severity Filter Tabs */}
+          <div className="flex items-center gap-1.5 p-1.5 bg-sky-100/60 rounded-2xl border border-sky-200 text-xs font-bold">
+            {['ALL', 'CRITICAL', 'URGENT', 'ROUTINE'].map((sev) => (
+              <button
+                key={sev}
+                onClick={() => setFilterSeverity(sev)}
+                className={`px-3 py-1.5 rounded-xl transition ${
+                  filterSeverity === sev
+                    ? 'bg-white text-sky-900 shadow-sm font-extrabold border border-sky-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {sev}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

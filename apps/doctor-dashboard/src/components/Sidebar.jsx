@@ -111,7 +111,16 @@ export default function Sidebar({ activeNav, setActiveNav, onSignOut }) {
       </div>
 
       {/* Bottom Section: Settings & Profile */}
-      <div className="space-y-4 pt-6 border-t border-white/10">
+      <div className="space-y-4 pt-4 border-t border-white/10">
+        {/* n8n Automation Status Chip */}
+        <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-[11px]">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-semibold text-white">n8n Webhook</span>
+          </div>
+          <span className="text-[10px] text-emerald-400 font-bold bg-emerald-400/10 px-1.5 py-0.5 rounded">Connected</span>
+        </div>
+
         <button className="flex items-center gap-3 px-2 text-xs font-semibold text-[#D1BAAE] hover:text-white transition">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="3" />

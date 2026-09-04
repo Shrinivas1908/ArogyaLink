@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.patient import Consent, Encounter, Patient
 
@@ -33,6 +34,7 @@ class StartSessionRequest(BaseModel):
     age: int | None = Field(default=None, json_schema_extra={"example": 34})
     gender: str | None = Field(default=None, json_schema_extra={"example": "Male"})
     phone: str | None = Field(default=None, json_schema_extra={"example": "+919876543210"})
+    otp: str | None = Field(default=None, json_schema_extra={"example": "123456"})
     kiosk_id: str | None = Field(default="kiosk-01", json_schema_extra={"example": "kiosk-01"})
     abha_number: str | None = Field(default=None, json_schema_extra={"example": "91-4820-9182-3491"})
     abha_address: str | None = Field(default=None, json_schema_extra={"example": "aarav@abdm"})
@@ -87,7 +89,33 @@ async def start_session(
     body: StartSessionRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Start a new patient check-in session at the Kiosk."""
+    """Start a new patient check-in session at the Kiosk with mandatory OTP verification."""
+    # Strict validation: Mobile number and OTP verification for manual check-in
+    from app.services.otp_service import otp_service
+
+    if body.phone or body.otp:
+        if not body.phone or not "".join(filter(str.isdigit, str(body.phone))):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mobile phone number is mandatory. Direct registration without OTP is not allowed.",
+            )
+        if not body.otp or not str(body.otp).strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP verification code is required. Direct registration without OTP is not permitted.",
+            )
+        otp_res = await otp_service.verify_otp(body.phone, body.otp)
+        if not otp_res.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=otp_res.get("message", "Invalid or expired OTP code. Direct registration without valid OTP is not permitted."),
+            )
+    elif settings.app_env not in ("development", "test"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mobile phone number and OTP verification are mandatory for patient registration.",
+        )
+
     patient = Patient(
         id=uuid.uuid4(),
         full_name=body.full_name,
@@ -114,6 +142,7 @@ async def start_session(
 
     try:
         from app.api.v1.ws_notifications import manager
+        from app.services.n8n_service import n8n_service
         await manager.broadcast({
             "event": "PATIENT_CHECKIN",
             "data": {
@@ -123,6 +152,14 @@ async def start_session(
                 "time": created_iso,
             }
         })
+        await n8n_service.send_patient_checkin(
+            encounter_id=str(encounter.id),
+            patient_name=patient.full_name or "Aarav Sharma",
+            triage_level=encounter.triage_level or "ROUTINE",
+            abha_number=patient.abha_number,
+            kiosk_id=body.kiosk_id,
+            time=created_iso,
+        )
     except Exception:
         pass
 
@@ -178,6 +215,7 @@ async def start_session_via_abha(
 
     try:
         from app.api.v1.ws_notifications import manager
+        from app.services.n8n_service import n8n_service
         await manager.broadcast({
             "event": "PATIENT_CHECKIN",
             "data": {
@@ -187,6 +225,14 @@ async def start_session_via_abha(
                 "time": created_iso,
             }
         })
+        await n8n_service.send_patient_checkin(
+            encounter_id=str(encounter.id),
+            patient_name=patient.full_name or "Ananya Sharma",
+            triage_level=encounter.triage_level or "ROUTINE",
+            abha_number=patient.abha_number,
+            kiosk_id=body.kiosk_id,
+            time=created_iso,
+        )
     except Exception:
         pass
 

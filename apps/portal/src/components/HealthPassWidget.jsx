@@ -152,9 +152,35 @@ export default function HealthPassWidget() {
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 font-medium border-t border-sky-100">
               <span>Verified by: Dr. Ananya Roy</span>
-              <span className="text-sky-600 font-bold hover:underline cursor-pointer">Download FHIR JSON →</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const phone = prompt('Enter your phone number to receive this prescription reminder on WhatsApp (+91...):', '+91 98765 43210')
+                    if (!phone) return
+                    const clean = phone.replace(/\D/g, '')
+                    const targetNum = clean.length === 10 ? `91${clean}` : clean
+                    const text = encodeURIComponent(
+                      `🏥 *ArogyaLink E-Prescription & Medicine Reminder*\n\n` +
+                      `Namaste *${cardProfile.name}*,\n` +
+                      `Here are your active prescribed medications:\n\n` +
+                      `💊 1. *Tab. Paracetamol 500mg* - 1 tab after meals (Morning & Evening) x 3 days\n` +
+                      `💊 2. *Syr. Amoxicillin 250mg* - 5ml twice daily after meals x 5 days\n\n` +
+                      `👨‍⚕️ Prescribed by: Dr. Ananya Roy\n` +
+                      `📍 Linked to ABHA: ${cardProfile.abha_number}\n\n` +
+                      `⚠️ For queries call 104 helpline. Stay well! 🌿`
+                    )
+                    window.open(`https://wa.me/${targetNum}?text=${text}`, '_blank')
+                  }}
+                  className="px-3 py-1 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold rounded-lg shadow-sm text-[11px] flex items-center gap-1 transition"
+                >
+                  <span>💬</span>
+                  <span>Send to my WhatsApp</span>
+                </button>
+                <span className="text-sky-600 font-bold hover:underline cursor-pointer">Download FHIR JSON →</span>
+              </div>
             </div>
           </div>
 

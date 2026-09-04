@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — tests/test_auth_boundary.py
 ===========================================
 Authentication boundary integration tests.

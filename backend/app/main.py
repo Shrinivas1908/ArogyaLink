@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — app/main.py
 ===========================
 FastAPI application factory.
@@ -29,6 +29,7 @@ from app.api.v1 import doctor_queue as doctor_queue_router
 from app.api.v1 import fhir as fhir_router
 from app.api.v1 import health as health_router
 from app.api.v1 import intake as intake_router
+from app.api.v1 import notifications as notifications_router
 from app.api.v1 import ocr as ocr_router
 from app.api.v1 import offline_sync as offline_sync_router
 from app.api.v1 import patient_history as patient_history_router
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
     app.include_router(ayush_router.router)
     app.include_router(reminders_router.router)
     app.include_router(patient_history_router.router)
+    app.include_router(notifications_router.router)
 
     return app
 

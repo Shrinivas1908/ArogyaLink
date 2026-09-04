@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — api/v1/ws.py
 ==========================
 WebSocket Connection Manager for Real-Time Doctor Queue and Triage Notifications.

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — integrations/abdm_client.py
 ==========================================
 Phase 12 — Ayushman Bharat Digital Mission (ABDM) M1, M2 & M3 Integration Client.

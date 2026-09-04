@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — tests/test_audit_approval.py
 ============================================
 Phase 11 — Doctor Approval & Audit Trail Integration Tests.

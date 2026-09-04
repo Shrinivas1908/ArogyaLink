@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { t } from '../lib/i18n'
 
 export default function DemographicsStep({
@@ -18,6 +18,62 @@ export default function DemographicsStep({
   onCreateSession,
 }) {
   const [isListeningName, setIsListeningName] = useState(false)
+
+  // n8n OTP State
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpSending, setOtpSending] = useState(false)
+  const [otpValue, setOtpValue] = useState('')
+  const [demoOtp, setDemoOtp] = useState('')
+  const [otpNotice, setOtpNotice] = useState(null)
+  const [timerSeconds, setTimerSeconds] = useState(0)
+
+  // Countdown timer effect
+  useEffect(() => {
+    let timer = null
+    if (timerSeconds > 0) {
+      timer = setInterval(() => {
+        setTimerSeconds((prev) => prev - 1)
+      }, 1000)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [timerSeconds])
+
+  // Dispatch OTP via n8n workflow
+  const handleSendOtp = async () => {
+    const rawPhone = formData.phone ? formData.phone.replace(/\D/g, '') : ''
+    if (rawPhone.length < 10) {
+      alert('Please enter a valid 10-digit mobile number before requesting an OTP.')
+      return
+    }
+
+    setOtpSending(true)
+    setOtpNotice(null)
+    try {
+      const res = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: rawPhone }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setOtpSent(true)
+        setTimerSeconds(45)
+        if (data.demo_otp) {
+          setDemoOtp(data.demo_otp)
+        }
+        setOtpNotice('✅ OTP dispatched via n8n Cloud. Please enter the 6-digit code sent to your phone.')
+      } else {
+        alert(data.message || data.detail || 'Could not send OTP. Please try again.')
+      }
+    } catch (err) {
+      console.error('Failed to dispatch OTP via n8n:', err)
+      alert('Network error while connecting to n8n OTP service.')
+    } finally {
+      setOtpSending(false)
+    }
+  }
 
   const handleSpeakName = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -51,6 +107,19 @@ export default function DemographicsStep({
     }
   }
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault()
+    if (!otpSent) {
+      handleSendOtp()
+      return
+    }
+    if (!otpValue.trim() || otpValue.trim().length < 4) {
+      alert('Please enter the 6-digit OTP code to verify your registration.')
+      return
+    }
+    onCreateSession(e, otpValue.trim())
+  }
+
   return (
     <div className="max-w-xl mx-auto w-full bg-white rounded-[32px] p-8 sm:p-10 border border-[#E4EDE9] shadow-xl space-y-6">
       
@@ -82,8 +151,8 @@ export default function DemographicsStep({
               : 'text-[#5F7D74] hover:text-[#12322B]'
           }`}
         >
-          <span>👤 Direct Registration</span>
-          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-mono">Standard</span>
+          <span>📱 Mobile OTP Registration</span>
+          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-mono">n8n Verified</span>
         </button>
 
         <button
@@ -105,14 +174,14 @@ export default function DemographicsStep({
         </div>
       )}
 
-      {/* ── MODE 1: Direct Registration (Patient Name Demanded) ────────── */}
+      {/* ── MODE 1: Mobile OTP Registration (Mandatory Mobile & OTP) ────────── */}
       {loginMode === 'manual' && (
-        <form onSubmit={onCreateSession} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-[#12322B] flex items-center gap-1">
                 <span>{t('full_name', lang)}</span>
-                <span className="text-red-600 font-bold">* (Required)</span>
+                <span className="text-red-600 font-bold">*</span>
               </label>
               <button
                 type="button"
@@ -168,23 +237,100 @@ export default function DemographicsStep({
             </div>
           </div>
 
+          {/* Mandatory Mobile Number without Optional Title */}
           <div>
-            <label className="block text-xs font-bold text-[#12322B] mb-1.5">{t('phone_optional', lang)}</label>
-            <input
-              type="tel"
-              placeholder="+91 96238 03405"
-              className="w-full p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-semibold text-sm text-[#12322B]"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-[#12322B] flex items-center gap-1">
+                <span>Mobile Number (मोबाइल नंबर)</span>
+                <span className="text-red-600 font-bold">*</span>
+              </label>
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                ⚡ n8n Verified
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="tel"
+                required
+                maxLength={10}
+                placeholder="10-digit mobile (e.g. 9876543210)"
+                className="flex-1 p-3.5 border border-[#E4EDE9] rounded-xl outline-none focus:border-[#12322B] bg-[#FAF7F2] font-semibold text-sm text-[#12322B] placeholder:text-slate-400 font-mono tracking-wide"
+                value={formData.phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '')
+                  setFormData({ ...formData, phone: val })
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={otpSending || timerSeconds > 0 || (formData.phone || '').length < 10}
+                className="px-4 py-3 bg-[#12322B] hover:bg-[#1C453C] disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition whitespace-nowrap"
+              >
+                {otpSending ? 'Sending…' : timerSeconds > 0 ? `Resend (${timerSeconds}s)` : otpSent ? 'Resend OTP' : '📲 Send OTP'}
+              </button>
+            </div>
+
+            {/* Required add-on security note line below the mobile input */}
+            <p className="mt-2 text-[11px] text-[#5F7D74] flex items-center gap-1.5 font-medium leading-relaxed">
+              <span>🔒</span>
+              <span>A secure 6-digit OTP will be dispatched via n8n Cloud to verify your registration.</span>
+            </p>
           </div>
 
+          {/* OTP Input Card (Appears after clicking Send OTP) */}
+          {otpSent && (
+            <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Enter 6-Digit OTP Code</span>
+                  <span className="text-red-600 font-bold">*</span>
+                </span>
+                {demoOtp && (
+                  <span
+                    onClick={() => setOtpValue(demoOtp)}
+                    className="cursor-pointer text-[10px] font-mono bg-emerald-200/80 hover:bg-emerald-300 text-emerald-900 px-2 py-0.5 rounded font-bold transition"
+                    title="Click to auto-fill for testing"
+                  >
+                    Auto-fill: {demoOtp}
+                  </span>
+                )}
+              </div>
+
+              <input
+                type="text"
+                required
+                maxLength={6}
+                autoFocus
+                placeholder="• • • • • •"
+                className="w-full p-3.5 border-2 border-emerald-400 focus:border-emerald-600 rounded-xl outline-none bg-white font-mono text-center text-xl font-bold tracking-[0.3em] text-[#12322B] shadow-inner"
+                value={otpValue}
+                onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
+              />
+
+              {otpNotice && (
+                <p className="text-[11px] text-emerald-800 font-medium text-center">
+                  {otpNotice}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Action Submission Button */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-4 rounded-full bg-[#12322B] hover:bg-[#1C453C] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50 active:scale-95"
+            disabled={loading || (otpSent && otpValue.length < 4)}
+            className="w-full py-4 rounded-full bg-gradient-to-r from-[#12322B] to-[#1C453C] hover:from-[#1C453C] hover:to-[#2A5E53] text-white font-bold text-xs uppercase tracking-wider shadow-md transition disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
           >
-            {loading ? t('starting_session', lang) : '✓ Register & Start Clinical Intake'}
+            <span>
+              {loading
+                ? t('starting_session', lang)
+                : otpSent
+                ? '✓ Verify OTP & Proceed to Next Page'
+                : '📲 Send OTP & Continue'}
+            </span>
           </button>
         </form>
       )}

@@ -67,3 +67,11 @@ async def get_audit_trail(
     """Retrieve full audit trail for an encounter."""
     trail = audit_service.get_encounter_audit_trail(encounter_id)
     return {"encounter_id": encounter_id, "logs": trail}
+
+
+@router.post("/logs")
+@router.post("/n8n-response")
+async def receive_external_audit_log(body: dict[str, Any]) -> dict[str, Any]:
+    """Endpoint for n8n or external services to POST audit log responses."""
+    from app.api.v1.notifications import receive_n8n_audit_response
+    return await receive_n8n_audit_response(body)

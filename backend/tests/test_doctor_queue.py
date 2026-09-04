@@ -1,4 +1,4 @@
-﻿"""
+"""
 Arogya Link — tests/test_doctor_queue.py
 ===========================================
 Phase 6 — Doctor Queue Integration Tests.
