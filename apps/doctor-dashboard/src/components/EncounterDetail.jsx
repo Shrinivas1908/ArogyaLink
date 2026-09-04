@@ -47,6 +47,12 @@ export default function EncounterDetail({
     { med: 'Cardiology OPD Follow-up Visit', dosage: 'Consultation', time: '04 Sep 2026 at 10:00 AM', frequency: 'Follow-up Consultation', instructions: 'Bring recent ECG & BP readings' },
   ])
 
+  useEffect(() => {
+    if (encounter?.patient?.phone || encounter?.phone) {
+      setPatientPhone(encounter?.patient?.phone || encounter?.phone)
+    }
+  }, [encounter])
+
   if (!encounter) {
     return (
       <div className="bg-white rounded-3xl p-10 border border-[#EFE8DE] shadow-sm text-center space-y-4">
@@ -91,12 +97,6 @@ export default function EncounterDetail({
     { test_name: 'Fasting Blood Glucose', value: '138', unit: 'mg/dL', reference: '70 - 99 mg/dL', flag: 'ELEVATED' },
     { test_name: 'Serum Creatinine', value: '0.95', unit: 'mg/dL', reference: '0.7 - 1.2 mg/dL', flag: 'NORMAL' },
   ]
-
-  useEffect(() => {
-    if (encounter?.patient?.phone || encounter?.phone) {
-      setPatientPhone(encounter?.patient?.phone || encounter?.phone)
-    }
-  }, [encounter])
 
   const cleanPhone = (p) => {
     if (!p) return '919876543210'

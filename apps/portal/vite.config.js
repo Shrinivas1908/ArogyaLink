@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 
 // ArogyaSetu Unified Doctor-Patient Portal — Vite Config (Port 5175)
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [
     react(),
     tailwindcss(),

@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 // Doctor Dashboard — Vite config
 // Runs on port 5174. Proxies /api → FastAPI backend (port 8000).
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [
     react(),
     tailwindcss(),
