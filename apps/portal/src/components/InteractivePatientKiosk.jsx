@@ -17,22 +17,6 @@ export default function InteractivePatientKiosk() {
     phone: '',
   })
 
-  // Mandatory Mobile OTP State (n8n Cloud Automation)
-  const [otp, setOtp] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpTimer, setOtpTimer] = useState(0)
-  const [otpSending, setOtpSending] = useState(false)
-
-  useEffect(() => {
-    let interval = null
-    if (otpTimer > 0) {
-      interval = setInterval(() => {
-        setOtpTimer((prev) => prev - 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [otpTimer])
-
   // Session state
   const [session, setSession] = useState(null)
 
@@ -95,47 +79,8 @@ export default function InteractivePatientKiosk() {
     }
   }
 
-  const handleSendOtp = async () => {
-    const rawDigits = (formData.phone || '').replace(/\D/g, '')
-    if (!rawDigits || rawDigits.length < 10) {
-      setError('Please enter a valid 10-digit mobile number before requesting an OTP.')
-      return
-    }
-    setOtpSending(true)
-    setError(null)
-
-    try {
-      const res = await fetch('/api/auth/otp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.detail || data.message || 'Failed to dispatch OTP via n8n automation.')
-      }
-      setOtpSent(true)
-      setOtpTimer(45)
-    } catch (err) {
-      setError(err.message || 'Could not dispatch OTP via n8n cloud automation.')
-    } finally {
-      setOtpSending(false)
-    }
-  }
-
   const handleCreateSession = async (e) => {
     e.preventDefault()
-    if (loginMode === 'manual') {
-      const rawDigits = (formData.phone || '').replace(/\D/g, '')
-      if (!rawDigits || rawDigits.length < 10) {
-        setError('Valid 10-digit mobile number is mandatory for check-in.')
-        return
-      }
-      if (!otp || !otp.trim()) {
-        setError('Please enter the 6-digit OTP code sent via n8n to complete registration.')
-        return
-      }
-    }
     setLoading(true)
     setError(null)
 
@@ -147,15 +92,14 @@ export default function InteractivePatientKiosk() {
           full_name: formData.fullName.trim() || 'Aarav Sharma',
           age: formData.age ? parseInt(formData.age, 10) : 34,
           gender: formData.gender,
-          phone: formData.phone.trim(),
-          otp: otp.trim(),
+          phone: formData.phone.trim() || '+919876543210',
           kiosk_id: 'portal-kiosk-01',
         }),
       })
 
       if (!res.ok) {
         const errData = await res.json()
-        throw new Error(errData.detail || errData.message || 'Failed to start session')
+        throw new Error(errData.message || 'Failed to start session')
       }
 
       const data = await res.json()
@@ -473,69 +417,22 @@ export default function InteractivePatientKiosk() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Mobile Number (मोबाइल नंबर) *
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    className="flex-1 p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={otpSending || otpTimer > 0}
-                    className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap shadow-sm"
-                  >
-                    <span>{otpSending ? 'Sending…' : otpTimer > 0 ? `Resend in ${otpTimer}s` : otpSent ? 'Resend OTP' : '📲 Send OTP'}</span>
-                  </button>
-                </div>
-                <p className="text-[11px] text-sky-700 font-medium mt-1.5 flex items-center gap-1">
-                  <span>🔒 A secure 6-digit OTP will be dispatched via n8n Cloud to verify your registration.</span>
-                </p>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  className="w-full p-3 border border-sky-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 bg-white font-medium text-sm"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
               </div>
-
-              {/* 6-Digit OTP Verification Card */}
-              {otpSent && (
-                <div className="p-4 bg-sky-50 border-2 border-dashed border-sky-300 rounded-2xl space-y-3 animate-fadeIn">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-sky-900 uppercase tracking-wider">
-                      Enter 6-Digit OTP Code
-                    </span>
-                    {otpTimer > 0 ? (
-                      <span className="text-xs font-mono font-bold text-sky-600 bg-sky-100 px-2 py-0.5 rounded-full">
-                        ⏳ 00:{otpTimer < 10 ? `0${otpTimer}` : otpTimer}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        className="text-xs text-sky-700 font-bold underline hover:text-sky-900"
-                      >
-                        Resend OTP
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="• • • • • •"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    className="w-full text-center text-2xl tracking-[0.5em] font-mono font-bold p-3 border-2 border-sky-400 rounded-xl bg-white focus:outline-none focus:ring-4 focus:ring-sky-200"
-                  />
-                </div>
-              )}
 
               <button
                 type="submit"
-                disabled={loading || (loginMode === 'manual' && (!otp || otp.length < 4))}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full py-4 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm shadow-md shadow-sky-500/25 transition disabled:opacity-50"
               >
-                {loading ? 'Starting Session…' : '✓ Verify OTP & Continue to Consent →'}
+                {loading ? 'Starting Session…' : 'Continue to Consent →'}
               </button>
             </form>
           )}

@@ -1,18 +1,6 @@
 import React from 'react'
 
-export default function Hero({ setActiveView }) {
-  const handleOpenKiosk = () => {
-    if (setActiveView) setActiveView('kiosk')
-    window.location.hash = '#kiosk'
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleOpenDoctor = () => {
-    if (setActiveView) setActiveView('doctor')
-    window.location.hash = '#doctor'
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
+export default function Hero() {
   return (
     <section className="relative pt-12 pb-20 px-6 overflow-hidden bg-[#FAF7F2]">
       {/* Background Soft Organic Circles */}
@@ -41,23 +29,25 @@ export default function Hero({ setActiveView }) {
 
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleOpenKiosk}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#12322B] text-white font-bold text-xs uppercase tracking-wider shadow-lg hover:bg-[#1C453C] hover:-translate-y-0.5 transition flex items-center justify-center gap-3 cursor-pointer"
+            <a
+              href="http://localhost:5173"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#12322B] text-white font-bold text-xs uppercase tracking-wider shadow-lg hover:bg-[#1C453C] hover:-translate-y-0.5 transition flex items-center justify-center gap-3"
             >
               <span>Launch Patient Kiosk App</span>
-              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono">Interactive Kiosk ➔</span>
-            </button>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono">Port 5173 ➔</span>
+            </a>
 
-            <button
-              type="button"
-              onClick={handleOpenDoctor}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#12322B] border border-[#E4EDE9] font-bold text-xs uppercase tracking-wider hover:bg-[#FAF7F2] hover:border-[#BFD8D2] transition flex items-center justify-center gap-3 shadow-sm cursor-pointer"
+            <a
+              href="http://localhost:5174"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#12322B] border border-[#E4EDE9] font-bold text-xs uppercase tracking-wider hover:bg-[#FAF7F2] hover:border-[#BFD8D2] transition flex items-center justify-center gap-3 shadow-sm"
             >
               <span>Open Doctor Dashboard</span>
-              <span className="text-[10px] bg-[#FAF7F2] px-2 py-0.5 rounded-full font-mono text-[#5F7D74]">Clinical Queue ➔</span>
-            </button>
+              <span className="text-[10px] bg-[#FAF7F2] px-2 py-0.5 rounded-full font-mono text-[#5F7D74]">Port 5174 ➔</span>
+            </a>
           </div>
 
           {/* Quick Metrics Bar */}
