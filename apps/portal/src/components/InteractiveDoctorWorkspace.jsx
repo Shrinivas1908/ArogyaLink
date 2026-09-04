@@ -270,7 +270,7 @@ export default function InteractiveDoctorWorkspace() {
           <div className="flex items-center gap-2">
             <span
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200 text-xs font-semibold"
-              title="Connected: https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications"
+              title="Connected: n8n Cloud Automation Webhook"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="hidden sm:inline">n8n Connected</span>

@@ -3,8 +3,8 @@ Arogya Link — services/n8n_service.py
 ======================================
 n8n Cloud Automation & Webhook Notification Integration Service.
 
-Dispatches real-time clinical and operational events to the n8n webhook:
-https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications
+Dispatches real-time clinical and operational events to the configured n8n webhook:
+${N8N_WEBHOOK_URL}
 
 Supported Event Categories:
   - EMERGENCY_ESCALATION: Critical triage, red flags, vitals alert
@@ -34,7 +34,7 @@ class N8nNotificationService:
 
     @property
     def webhook_url(self) -> str:
-        return settings.n8n_webhook_url or "https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications"
+        return settings.n8n_webhook_url or ""
 
     @property
     def is_enabled(self) -> bool:

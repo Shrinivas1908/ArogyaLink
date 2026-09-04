@@ -20,6 +20,8 @@ client = TestClient(app)
 
 def test_n8n_status_endpoint():
     """Verify GET /notifications/n8n/status returns configuration and endpoint."""
+    from app.core.config import settings
+    settings.n8n_webhook_url = "https://mock-n8n.cloud/webhook/arogyasetu-notifications"
     response = client.get("/notifications/n8n/status")
     assert response.status_code == 200
     data = response.json()

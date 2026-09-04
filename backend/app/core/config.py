@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
 
     # ── n8n Cloud Automation Webhook ─────────────────────────────────
-    n8n_webhook_url: str = "https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications"
+    n8n_webhook_url: str = ""
     n8n_enabled: bool = True
 
 

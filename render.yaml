@@ -26,7 +26,7 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: N8N_WEBHOOK_URL
-        value: https://shrinvas2005.app.n8n.cloud/webhook/arogyasetu-notifications
+        sync: false
       - key: N8N_ENABLED
         value: "true"
 

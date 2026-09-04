@@ -9,8 +9,6 @@ scratch/
 .env*
 *.env
 *.env.*
-!.env.example
-!apps/*/.env.example
 backend/.env
 apps/*/.env
 apps/*/.env.local
