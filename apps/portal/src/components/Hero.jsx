@@ -30,23 +30,23 @@ export default function Hero() {
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <a
-              href="http://localhost:5173"
+              href={import.meta.env.VITE_KIOSK_URL || "http://localhost:5173"}
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#12322B] text-white font-bold text-xs uppercase tracking-wider shadow-lg hover:bg-[#1C453C] hover:-translate-y-0.5 transition flex items-center justify-center gap-3"
             >
               <span>Launch Patient Kiosk App</span>
-              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono">Port 5173 ➔</span>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-mono">Launch ➔</span>
             </a>
 
             <a
-              href="http://localhost:5174"
+              href={import.meta.env.VITE_DOCTOR_URL || "http://localhost:5174"}
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#12322B] border border-[#E4EDE9] font-bold text-xs uppercase tracking-wider hover:bg-[#FAF7F2] hover:border-[#BFD8D2] transition flex items-center justify-center gap-3 shadow-sm"
             >
               <span>Open Doctor Dashboard</span>
-              <span className="text-[10px] bg-[#FAF7F2] px-2 py-0.5 rounded-full font-mono text-[#5F7D74]">Port 5174 ➔</span>
+              <span className="text-[10px] bg-[#FAF7F2] px-2 py-0.5 rounded-full font-mono text-[#5F7D74]">Launch ➔</span>
             </a>
           </div>
 

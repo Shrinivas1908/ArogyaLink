@@ -39,20 +39,20 @@ export default function Header() {
         {/* Quick Launch Buttons */}
         <div className="flex items-center gap-3 text-xs font-bold">
           <a
-            href="http://localhost:5173"
+            href={import.meta.env.VITE_KIOSK_URL || "http://localhost:5173"}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2 rounded-full bg-white border border-[#E4EDE9] text-[#12322B] hover:bg-[#FAF7F2] transition shadow-sm"
           >
-            Patient Kiosk (5173)
+            Patient Kiosk
           </a>
           <a
-            href="http://localhost:5174"
+            href={import.meta.env.VITE_DOCTOR_URL || "http://localhost:5174"}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2 rounded-full bg-[#12322B] text-white hover:bg-[#1C453C] transition shadow-sm"
           >
-            Doctor Workspace (5174) →
+            Doctor Workspace →
           </a>
         </div>
       </div>
