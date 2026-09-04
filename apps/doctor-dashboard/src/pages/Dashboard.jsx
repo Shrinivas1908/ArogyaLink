@@ -62,9 +62,15 @@ export default function Dashboard() {
     const connectWS = () => {
       if (!isMounted) return
       try {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const host = window.location.hostname || '127.0.0.1'
-        ws = new WebSocket(`${protocol}//${host}:8000/ws/notifications`)
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        const wsUrl = isLocal
+          ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname || '127.0.0.1'}:8000/ws/notifications`
+          : 'wss://arogyasetu-backend.onrender.com/ws/notifications'
+
+        ws = new WebSocket(wsUrl)
+        ws.onerror = () => {
+          // Graceful fallback when backend or socket is waking up
+        }
 
         ws.onopen = () => {
           if (!isMounted) {
