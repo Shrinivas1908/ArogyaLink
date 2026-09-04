@@ -17,8 +17,32 @@ export default function Footer() {
 
         <div className="flex items-center gap-6 font-semibold">
           <a href={import.meta.env.VITE_DOCS_URL || "/api/docs"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">API Documentation</a>
-          <a href={import.meta.env.VITE_KIOSK_URL || "http://localhost:5173"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Patient Kiosk</a>
-          <a href={import.meta.env.VITE_DOCTOR_URL || "http://localhost:5174"} target="_blank" rel="noreferrer" className="hover:text-[#12322B] transition">Doctor Workspace</a>
+          <a
+            href={
+              import.meta.env.VITE_KIOSK_URL ||
+              (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                ? 'https://arogya-patient-kiosk.vercel.app'
+                : 'http://localhost:5173')
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#12322B] transition"
+          >
+            Patient Kiosk
+          </a>
+          <a
+            href={
+              import.meta.env.VITE_DOCTOR_URL ||
+              (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                ? 'https://arogya-doctor-dashboard.vercel.app'
+                : 'http://localhost:5174')
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#12322B] transition"
+          >
+            Doctor Workspace
+          </a>
         </div>
 
         <div className="text-[11px] text-[#5F7D74] font-medium">

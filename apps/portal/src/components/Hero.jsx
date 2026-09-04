@@ -30,7 +30,12 @@ export default function Hero() {
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <a
-              href={import.meta.env.VITE_KIOSK_URL || "http://localhost:5173"}
+              href={
+                import.meta.env.VITE_KIOSK_URL ||
+                (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                  ? 'https://arogya-patient-kiosk.vercel.app'
+                  : 'http://localhost:5173')
+              }
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#12322B] text-white font-bold text-xs uppercase tracking-wider shadow-lg hover:bg-[#1C453C] hover:-translate-y-0.5 transition flex items-center justify-center gap-3"
@@ -40,7 +45,12 @@ export default function Hero() {
             </a>
 
             <a
-              href={import.meta.env.VITE_DOCTOR_URL || "http://localhost:5174"}
+              href={
+                import.meta.env.VITE_DOCTOR_URL ||
+                (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                  ? 'https://arogya-doctor-dashboard.vercel.app'
+                  : 'http://localhost:5174')
+              }
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-[#12322B] border border-[#E4EDE9] font-bold text-xs uppercase tracking-wider hover:bg-[#FAF7F2] hover:border-[#BFD8D2] transition flex items-center justify-center gap-3 shadow-sm"
