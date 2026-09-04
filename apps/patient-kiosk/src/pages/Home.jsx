@@ -92,7 +92,7 @@ export default function Home() {
       })
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}))
-        throw new Error(errJson.detail || 'Failed to start session on server')
+        throw new Error(errJson.message || errJson.detail || 'Failed to start session on server')
       }
       const data = await res.json()
       setSession(data)
