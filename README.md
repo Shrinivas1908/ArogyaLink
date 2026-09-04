@@ -15,7 +15,37 @@
 
 ---
 
+## 🌐 Live Production Deployments
+
+| Component | Live Production URL | Description |
+| :--- | :--- | :--- |
+| **🌐 Central Showcase Portal** | [https://arogya-main-portal.vercel.app](https://arogya-main-portal.vercel.app) | Public landing page, AYUSH hospital directory & triage assistant |
+| **🩺 Doctor OPD Workspace** | [https://arogya-doctor-dashboard.vercel.app](https://arogya-doctor-dashboard.vercel.app) | Real-time triaged queue, AI differentials & Rx OCR review |
+| **📱 Multilingual Patient Kiosk** | [https://arogya-patient-kiosk.vercel.app](https://arogya-patient-kiosk.vercel.app) | Voice symptom intake, ABHA check-in & Rx document scanner |
+| **⚡ Backend API (Render)** | [https://arogyasetu-backend.onrender.com/docs](https://arogyasetu-backend.onrender.com/docs) | FastAPI REST API, interactive Swagger & WebSocket hub |
+| **🩺 API Health Endpoint** | [https://arogyasetu-backend.onrender.com/health](https://arogyasetu-backend.onrender.com/health) | Live PostgreSQL / SQLite database connection health check |
+
+---
+
+## 🔑 Sample Demo Credentials
+
+Use these pre-configured credentials to test all features immediately:
+
+| Portal | Login Mode | Field | Sample Value |
+| :--- | :--- | :--- | :--- |
+| **Patient Kiosk** | **ABHA ID Login** | ABHA ID / Number | `91-4820-9182-3491` |
+| | | PIN | `1234` |
+| **Patient Kiosk** | **Phone OTP Check-in** | Full Name | `Ananya Sharma` |
+| | | Mobile Number | `9876543210` |
+| | | OTP Code | `123456` *(universal demo code)* |
+| **Doctor Portal** | **Sign In** | Email | `doctor@arogyasetu.in` |
+| | | Password | `Doctor@2026` |
+
+---
+
 ## 📖 Table of Contents
+- [Live Production Deployments](#-live-production-deployments)
+- [Sample Demo Credentials](#-sample-demo-credentials)
 - [Overview](#-overview)
 - [Key Features & Modules](#-key-features--modules)
 - [Universal 12-Organ-System Clinical AI Engine](#-universal-12-organ-system-clinical-ai-engine)
@@ -111,7 +141,7 @@ ArogyaLink incorporates an enterprise multi-tier clinical document processing pi
                │                                           │
       ┌────────┴────────┐                         ┌────────┴────────┐
       ▼                 ▼                         ▼                 ▼
-   PyMuPDF        BioClinical-NER        OpenCV Pre-Processing   Gemini 2.5/3.6 Flash
+   PyMuPDF        BioClinical-NER        OpenCV Pre-Processing   Gemini 3.6 Flash / Latest
    (Direct PDF)   (Entity Extractor)     • Morphological Shadow  (Multimodal Vision)
                                            Division & Deskewing            │
                                          • CLAHE Ink Contrast              ▼
@@ -132,7 +162,7 @@ ArogyaLink incorporates an enterprise multi-tier clinical document processing pi
 
 ### Key Technical Improvements
 1. **OpenCV Pre-Processing Pipeline**: Automatic contour-based deskewing and morphological background division (`255 - absdiff(gray, bg_blur)`) to flatten phone shadows and dim lighting before feeding images to vision models.
-2. **Gemini 2.5 / 3.6 Flash Multimodal Vision**: Vision LLM prompt with few-shot Indian prescription patterns (`1-0-1`, `OD`, `BD`, `TDS`, `HS`, `SOS`) and 25s client resilience timeouts.
+2. **Gemini 3.6-Flash & Flash-Latest Multimodal Vision**: Vision LLM prompt with few-shot Indian prescription patterns (`1-0-1`, `OD`, `BD`, `TDS`, `HS`, `SOS`), automated PIL image thumbnail optimization (max 1600x1600), and 60s client resilience timeouts.
 3. **Fuzzy Medical Entity Resolution**: Matches noisy OCR transcriptions (e.g. *"Paracetmol"*, *"Pan-D"*, *"Augmentn"*) against a clinical drug database (`COMMON_DRUGS_DB`) and lab panels (`COMMON_LABS_REF`) using similarity thresholds to ensure clean clinical names, dosages, and drug categories.
 4. **Chain-of-Thought (CoT) Grounded Summaries**: Summarizes clinical findings with zero hallucinations, linking intake answers directly with OCR active medications and red flags.
 

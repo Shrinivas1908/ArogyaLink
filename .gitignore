@@ -3,6 +3,7 @@
 # Resources — Excluded from Git per user directive
 resources/
 scratch/
+ArogyaLink/
 
 # Environment Files — NEVER commit secrets to GitHub
 .env
