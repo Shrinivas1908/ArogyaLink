@@ -32,8 +32,10 @@ cv2 = _load_optional_mod("cv2")
 np = _load_optional_mod("numpy")
 pytesseract = _load_optional_mod("pytesseract")
 pymupdf = _load_optional_mod("pymupdf")
-_pil_mod = _load_optional_mod("PIL.Image")
-Image = getattr(_pil_mod, "Image", None) if _pil_mod else getattr(_load_optional_mod("PIL"), "Image", None)
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 
 from app.core.config import settings
 
@@ -41,10 +43,11 @@ logger = logging.getLogger(__name__)
 
 # Priority list of Gemini Multimodal models
 GEMINI_VISION_MODELS = [
-    "gemini-2.5-flash",
     "gemini-3.6-flash",
-    "gemini-3.7-flash",
     "gemini-flash-latest",
+    "gemini-3.7-flash",
+    "gemini-pro-latest",
+    "gemini-2.5-flash",
 ]
 
 COMMON_DRUGS_DB: dict[str, dict[str, str]] = {
@@ -257,8 +260,9 @@ class PaddleOCRClient:
                 return ext_result
 
         # ── Pipeline Step 3: Google Gemini Multimodal Vision API ───────
-        if self.gemini_api_key and self.gemini_api_key.strip().startswith("AIzaSy"):
-            ai_result = self._extract_with_gemini_vision(processed_bytes, is_pdf=is_pdf)
+        clean_gem_key = self.gemini_api_key.strip().strip("\"'") if self.gemini_api_key else ""
+        if clean_gem_key and len(clean_gem_key) > 8:
+            ai_result = self._extract_with_gemini_vision(image_bytes, is_pdf=is_pdf)
             if ai_result and ai_result.get("status") == "success":
                 ai_result["document_id"] = doc_id
                 if not ai_result.get("document_type"):
@@ -414,6 +418,21 @@ class PaddleOCRClient:
     def _extract_with_gemini_vision(self, file_bytes: bytes, is_pdf: bool = False) -> dict[str, Any] | None:
         """Use Gemini Multimodal vision with few-shot Indian prescription patterns and strict JSON output."""
         try:
+            # Optimize image payload dimensions for fast, reliable multimodal transmission
+            if not is_pdf and Image is not None:
+                try:
+                    import io
+                    im = Image.open(io.BytesIO(file_bytes))
+                    if max(im.size) > 1600:
+                        im.thumbnail((1600, 1600))
+                    if im.mode not in ("RGB", "L"):
+                        im = im.convert("RGB")
+                    out_buf = io.BytesIO()
+                    im.save(out_buf, format="JPEG", quality=88)
+                    file_bytes = out_buf.getvalue()
+                except Exception as opt_err:
+                    logger.debug(f"Image resize optimization notice: {opt_err}")
+
             b64_data = base64.b64encode(file_bytes).decode("utf-8")
             mime_type = "application/pdf" if is_pdf else "image/jpeg"
 
@@ -439,9 +458,10 @@ class PaddleOCRClient:
                 "Return ONLY strictly valid JSON matching this schema."
             )
 
+            clean_api_key = self.gemini_api_key.strip().strip("\"'") if self.gemini_api_key else ""
             for model_name in GEMINI_VISION_MODELS:
                 try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_api_key.strip()}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={clean_api_key}"
                     payload = {
                         "contents": [
                             {
@@ -462,7 +482,7 @@ class PaddleOCRClient:
                         },
                     }
 
-                    with httpx.Client(timeout=25.0) as client:
+                    with httpx.Client(timeout=60.0) as client:
                         res = client.post(url, json=payload)
                         if res.status_code == 200:
                             data = res.json()
