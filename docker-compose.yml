@@ -41,6 +41,8 @@ services:
       - SUPABASE_JWT_AUD=${SUPABASE_JWT_AUD:-authenticated}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-}
+      - N8N_ENABLED=${N8N_ENABLED:-true}
     env_file:
       - path: ./.env
         required: false

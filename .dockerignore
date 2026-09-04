@@ -9,4 +9,8 @@ __pycache__
 .git
 .gitignore
 scratch
+resources
 *.log
+.env
+.env*
+*.env
