@@ -88,7 +88,7 @@ export default function App() {
         {/* View 3: Complete Unified Portal */}
         {activeView === 'portal' && (
           <div className="space-y-12 animate-fadeIn">
-            <Hero />
+            <Hero setActiveView={setActiveView} />
             <PatientHealthLocker />
             <RoleShowcase />
             <TeleConsultationWidget />
