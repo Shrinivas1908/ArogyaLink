@@ -35,17 +35,22 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // 2. Check Supabase session if available
+    // 2. Check Supabase session safely
     try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setSession(session)
-          setUser(session.user)
-          setRole('DOCTOR')
-          setUserProfile({ email: session.user.email, role: 'DOCTOR' })
-        }
+      if (supabase?.auth?.getSession) {
+        supabase.auth.getSession().then((res) => {
+          const sess = res?.data?.session
+          if (sess) {
+            setSession(sess)
+            setUser(sess.user || { email: 'doctor@arogyasetu.in', name: 'Dr. Medical Officer' })
+            setRole('DOCTOR')
+            setUserProfile({ email: sess.user?.email || 'doctor@arogyasetu.in', role: 'DOCTOR' })
+          }
+          setLoading(false)
+        }).catch(() => setLoading(false))
+      } else {
         setLoading(false)
-      }).catch(() => setLoading(false))
+      }
     } catch {
       setLoading(false)
     }
